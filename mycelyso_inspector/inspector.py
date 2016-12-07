@@ -12,7 +12,6 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot
 import mpld3
-import cv2
 import pandas
 
 from flask import Flask, Blueprint, redirect, jsonify, abort, g, send_file, Response
@@ -115,7 +114,7 @@ minimum_percentage, maximum_percentage = 0.0, 0.5
 
 imagestacks = {}
 
-@bp.route(POSITION_PREFIX + 'original_snapshot.jpg')
+@bp.route(POSITION_PREFIX + 'original_snapshot.png')
 def original_snapshot():
     if ImageStack is None:
         image = numpy.zeros((32, 32), dtype=numpy.uint8)
@@ -158,7 +157,7 @@ def original_snapshot():
         # image_file = h5_directory + "/tmp/%s.nd2_%04d.jpg" % (namelet, num,)
         # # send_file
 
-    return Response(to_jpg(image), mimetype='image/jpeg')
+    return Response(to_png(image), mimetype='image/png')
 
 
 def inject_tables():
@@ -192,14 +191,45 @@ def results_per_position():
 
     return jsonify(results=dataframe_to_json_safe_array_of_dicts(g.RT)[0])
 
-def to_image(image, ext):
-    return cv2.imencode('.%s' % ext, image)[1].tobytes()
+# def to_image(image, ext):
+#     return cv2.imencode('.%s' % ext, image)[1].tobytes()
+#
+# def to_jpg(image):
+#     return to_image(image, 'jpg')
 
-def to_jpg(image):
-    return to_image(image, 'jpg')
+import png
+from io import BytesIO
+
+
+def to_image(image, ext):
+    dpi = 150
+    print(image.shape)
+    pyplot.figure(figsize=(image.shape[1] / dpi, image.shape[0] / dpi), dpi=dpi)
+    pyplot.xlim((0, image.shape[1]))
+    pyplot.ylim((0, image.shape[0]))
+    pyplot.gca().set_aspect('equal')
+    pyplot.gca().invert_yaxis()
+    pyplot.gca().axes.get_xaxis().set_visible(False)
+    pyplot.gca().axes.get_yaxis().set_visible(False)
+    pyplot.axis('off')
+
+    pyplot.imshow(image, cmap='gray')
+
+    #pyplot.subplots_adjust(bottom=0.14)
+
+    buffer = BytesIO()
+    pyplot.savefig(buffer, format=ext, dpi=dpi, bbox_inches='tight', pad_inches=0, transparent=True)
+    pyplot.close('all')
+
+    return buffer.getvalue()
+
 
 def to_png(image):
+
     return to_image(image, 'png')
+    buffer = BytesIO()
+    png.from_array(image, 'L').save(buffer)
+    return buffer.getvalue()
 
 def get_images_by_request_and_path(n=1, *args):
     return numpy.concatenate([

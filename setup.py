@@ -26,7 +26,7 @@ setup(
     url='https://github.com/modsim/mycelyso',
     packages=['mycelyso_inspector'],
     #scripts=[''],
-    requires=['numpy', 'scipy', 'matplotlib', 'networkx', 'cv2', 'numexpr'],
+    requires=['numpy', 'scipy', 'matplotlib', 'networkx', 'pypng', 'numexpr'],
     # extras_require={
     #     'feature': ['package'],
     # },

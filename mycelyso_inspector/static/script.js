@@ -29,11 +29,23 @@ streptoApp.controller('streptoPositionManagement', function($scope, $http, $root
     $scope.loadFileIndex = function(f) {
         $http.get(make_url(PREFIX, 'files', $scope.file, 'index.json')).success(function(response) {
             $scope.fileIndex = response.contents;
+
+            if(!$scope.data_file) {
+                $scope.data_file = Object.keys($scope.fileIndex)[0];
+                $scope.position = $scope.fileIndex[$scope.data_file][0];
+                $scope.broadcastPosition()
+            }
         });
     }
 
     $http.get(make_url(PREFIX, 'files', 'index.json')).success(function(response) {
         $scope.files = response.files;
+
+        if(!$scope.file) {
+            $scope.file = $scope.files[0];
+            $scope.loadFileIndex($scope.file);
+        }
+
     });
 
     $scope.previousPosition = function() {
@@ -253,9 +265,11 @@ streptoApp.controller('streptoPlotlist', function($scope, $http, $rootScope, $q)
     $scope.plotIndex = 0;
     $scope.plots = [];
 
+    // gets overriden later
+    $scope.showPlot = function() {};
+
+
     $rootScope.$on('newPositionUrl', function(event, url) {
-
-
         $q.all([
             $http.get(make_url(url, 'plots', 'index' + '.json')),
             $http.get(make_url(url, 'track_plots', 'index' + '.json'))
@@ -263,15 +277,14 @@ streptoApp.controller('streptoPlotlist', function($scope, $http, $rootScope, $q)
             $scope.plots = [];
             $scope.plots = $scope.plots.concat(responses[0].data.plots);
             $scope.plots = $scope.plots.concat(responses[1].data.plots);
+
+            $scope.showPlot = function() {
+                if(($scope.plots.length - 1) > $scope.plotIndex)
+                $rootScope.$emit('showPlot', url + '/' + $scope.plots[$scope.plotIndex][1])
+            }
+
+            $scope.showPlot();
         });
-
-        $scope.showPlot = function() {
-            if(($scope.plots.length - 1) > $scope.plotIndex)
-            $rootScope.$emit('showPlot', url + '/' + $scope.plots[$scope.plotIndex][1])
-        }
-
-        $scope.showPlot();
-
     });
 
     $rootScope.$on('selectTrackPlot', function(event, plotNum) {

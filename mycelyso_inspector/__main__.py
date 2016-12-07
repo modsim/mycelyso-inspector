@@ -3,7 +3,7 @@
 documentation
 """
 
-from .inspector import main
+from mycelyso_inspector.inspector import main
 
 if __name__ == '__main__':
     main()
