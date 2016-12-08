@@ -6,6 +6,7 @@ documentation
 import sys
 import os
 import glob
+import time
 
 import numpy
 import matplotlib
@@ -98,14 +99,12 @@ def get_file_contents():
 POSITION_PREFIX = '/files/<file_name>/data/<original_name>/<position_name>/'
 
 try:
-    from pilyso.imagestack.imagestack import ImageStack, Dimensions, MinMaxFilter
-    # ditch these # TODO
-    import pilyso.imagestack.tiffimagestack
-    import pilyso.imagestack.ometiffimagestack
-    import pilyso.imagestack.nd2imagestack
-    # /
+
+    from pilyso.imagestack.imagestack import ImageStack, Dimensions
+    from pilyso.imagestack.readers.tiff import TiffImageStack
+    from pilyso.steps import image_source, Meta, rescale_image_to_uint8
 except ImportError:
-    ImageStack = Dimensions = MinMaxFilter = None
+    ImageStack = Dimensions = None
 
 images_in_collage = 3
 images_subsampling = 4
@@ -123,15 +122,20 @@ def original_snapshot():
         path = str(g.RT.filename_complete[0])
 
         if path not in imagestacks:
-            imagestacks[path] = ImageStack(path).filter(MinMaxFilter)
+            imagestacks[path] = ImageStack(path)
+
+        #meta =
+        #image = image_source(ims, Meta(t=t, pos=0))
+        #return image
 
         ims = imagestacks[path]
+        print(ims)
         ims = ims.view(Dimensions.Position, Dimensions.Time)[int(g.RT.meta_pos[0]), :]
 
         timepoints = ims.sizes[0]
 
 
-        images = [ims[i] for i in range(0, timepoints, timepoints//images_in_collage)]
+        images = [rescale_image_to_uint8(ims[i]).astype(numpy.float32) for i in range(0, timepoints, timepoints//images_in_collage)]
         images = [i[::images_subsampling, ::images_subsampling] for i in images]
 
 
@@ -226,7 +230,7 @@ def to_image(image, ext):
 
 def to_png(image):
 
-    return to_image(image, 'png')
+    #return to_image(image, 'png')
     buffer = BytesIO()
     png.from_array(image, 'L').save(buffer)
     return buffer.getvalue()
@@ -453,6 +457,15 @@ def main():
         args.host = '127.0.0.1'
         print("Debug mode enabled, host force-set to %s" % args.host)
         app.debug = True
+
+        @app.before_request
+        def _inject_start_time():
+            g.start_time = time.time()
+
+        @app.teardown_request
+        def _print_elapsed_time(response):
+            delta = time.time() - g.start_time
+            print("took %.3fs" % (delta,))
 
         app.run(host=args.host, port=args.port)
     else:
