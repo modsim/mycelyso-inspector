@@ -9,16 +9,25 @@ import glob
 import time
 
 import numpy
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib import pyplot
-import mpld3
+
 import pandas
+import png
+from io import BytesIO
 
 from flask import Flask, Blueprint, redirect, jsonify, abort, g, send_file, Response
 from argparse import ArgumentParser
 
+try:
+    from pilyso.imagestack.imagestack import ImageStack, Dimensions
+    from pilyso.imagestack.readers.tiff import TiffImageStack
+    from pilyso.steps import image_source, Meta, rescale_image_to_uint8
+except ImportError:
+    image_source, Meta, rescale_image_to_uint8, TiffImageStack = ImageStack = Dimensions = None
 
+import matplotlib
+matplotlib.use('Agg')
+from matplotlib import pyplot
+import mpld3
 
 bp = Blueprint('inspector', __name__)
 
@@ -46,6 +55,7 @@ def update_files():
 def hello():
     return redirect('static/index.htm')
 
+
 @bp.route('/mpld3.js')
 def send_mpld3():
     return send_file(mpld3.urls.MPLD3_LOCAL)
@@ -64,11 +74,12 @@ def open_file_if_present(endpoint, values):
         if file_name not in open_files:
             update_files()
             if file_name not in h5_files:
-                abort()
+                abort(500)
 
             open_files[file_name] = pandas.HDFStore(h5_files[file_name], 'r')
 
         g.h = open_files[file_name]
+        # noinspection PyProtectedMember
         g.h5h = g.h._handle
 
 
@@ -85,9 +96,11 @@ def get_file_contents():
     result = {}
 
     for node in g.h5h.list_nodes(where=h5_base_node):
+        # noinspection PyProtectedMember
         original_name = node._v_name
         positions = []
         for position in g.h5h.list_nodes(where=h5_join(h5_base_node, original_name)):
+            # noinspection PyProtectedMember
             position_name = position._v_name
             positions.append(position_name)
 
@@ -98,14 +111,6 @@ def get_file_contents():
 
 POSITION_PREFIX = '/files/<file_name>/data/<original_name>/<position_name>/'
 
-try:
-
-    from pilyso.imagestack.imagestack import ImageStack, Dimensions
-    from pilyso.imagestack.readers.tiff import TiffImageStack
-    from pilyso.steps import image_source, Meta, rescale_image_to_uint8
-except ImportError:
-    ImageStack = Dimensions = None
-
 images_in_collage = 3
 images_subsampling = 4
 perform_non_linear_adaption = True
@@ -113,53 +118,40 @@ minimum_percentage, maximum_percentage = 0.0, 0.5
 
 imagestacks = {}
 
+
+# noinspection PyUnresolvedReferences
 @bp.route(POSITION_PREFIX + 'original_snapshot.png')
 def original_snapshot():
-    if ImageStack is None:
-        image = numpy.zeros((32, 32), dtype=numpy.uint8)
-    else:
-        inject_tables()
-        path = str(g.RT.filename_complete[0])
+    assert ImageStack
 
-        if path not in imagestacks:
-            imagestacks[path] = ImageStack(path)
+    inject_tables()
+    path = str(g.RT.filename_complete[0])
 
-        #meta =
-        #image = image_source(ims, Meta(t=t, pos=0))
-        #return image
+    if path not in imagestacks:
+        imagestacks[path] = ImageStack(path)
 
-        ims = imagestacks[path]
-        print(ims)
-        ims = ims.view(Dimensions.Position, Dimensions.Time)[int(g.RT.meta_pos[0]), :]
+    ims = imagestacks[path]
 
-        timepoints = ims.sizes[0]
+    ims = ims.view(Dimensions.Position, Dimensions.Time)[int(g.RT.meta_pos[0]), :]
 
+    timepoints = ims.sizes[0]
 
-        images = [rescale_image_to_uint8(ims[i]).astype(numpy.float32) for i in range(0, timepoints, timepoints//images_in_collage)]
-        images = [i[::images_subsampling, ::images_subsampling] for i in images]
+    images = [rescale_image_to_uint8(ims[i]).astype(numpy.float32)
+              for i in range(0, timepoints, timepoints//images_in_collage)]
+    images = [i[::images_subsampling, ::images_subsampling] for i in images]
 
+    if perform_non_linear_adaption:
+        for im in images:
+            im -= im.min()
+            im /= im.max()
 
-        if perform_non_linear_adaption:
-            for im in images:
-                im -= im.min()
-                im /= im.max()
+            numpy.clip(im, minimum_percentage, maximum_percentage, out=im)
 
-                numpy.clip(im, minimum_percentage, maximum_percentage, out=im)
+            im -= im.min()
+            im /= im.max()
 
-                im -= im.min()
-                im /= im.max()
-
-
-        images = [(i*255).astype(numpy.uint8) for i in images]
-
-
-        image = numpy.concatenate(images, axis=1)
-
-        # old code ...
-        # namelet = g.original_name.split('_')[-2]
-        # num = int(g.position_name.split('_')[1])
-        # image_file = h5_directory + "/tmp/%s.nd2_%04d.jpg" % (namelet, num,)
-        # # send_file
+    images = [(im*255).astype(numpy.uint8) for im in images]
+    image = numpy.concatenate(images, axis=1)
 
     return Response(to_png(image), mimetype='image/png')
 
@@ -195,45 +187,12 @@ def results_per_position():
 
     return jsonify(results=dataframe_to_json_safe_array_of_dicts(g.RT)[0])
 
-# def to_image(image, ext):
-#     return cv2.imencode('.%s' % ext, image)[1].tobytes()
-#
-# def to_jpg(image):
-#     return to_image(image, 'jpg')
-
-import png
-from io import BytesIO
-
-
-def to_image(image, ext):
-    dpi = 150
-    print(image.shape)
-    pyplot.figure(figsize=(image.shape[1] / dpi, image.shape[0] / dpi), dpi=dpi)
-    pyplot.xlim((0, image.shape[1]))
-    pyplot.ylim((0, image.shape[0]))
-    pyplot.gca().set_aspect('equal')
-    pyplot.gca().invert_yaxis()
-    pyplot.gca().axes.get_xaxis().set_visible(False)
-    pyplot.gca().axes.get_yaxis().set_visible(False)
-    pyplot.axis('off')
-
-    pyplot.imshow(image, cmap='gray')
-
-    #pyplot.subplots_adjust(bottom=0.14)
-
-    buffer = BytesIO()
-    pyplot.savefig(buffer, format=ext, dpi=dpi, bbox_inches='tight', pad_inches=0, transparent=True)
-    pyplot.close('all')
-
-    return buffer.getvalue()
-
 
 def to_png(image):
-
-    #return to_image(image, 'png')
     buffer = BytesIO()
     png.from_array(image, 'L').save(buffer)
     return buffer.getvalue()
+
 
 def get_images_by_request_and_path(n=1, *args):
     return numpy.concatenate([
@@ -288,7 +247,7 @@ class Plots(object):
         pyplot.plot(g.RTC.timepoint * seconds_to_hours, g.RTC.graph_node_count)
 
     @staticmethod
-    def graph_branchness(fig):
+    def graph_branchness(fig):  # TODO change to HGF
         pyplot.title('(Edge Length/Intersection Count) of Graph')
         pyplot.xlabel('time [h]')
         pyplot.ylabel('µm⁻¹')
@@ -432,7 +391,6 @@ def get_tracking():
     return jsonify(results=dataframe_to_json_safe_array_of_dicts(g.TT))
 
 
-
 def main():
     app = Flask(__name__)
     app.register_blueprint(bp)
@@ -475,11 +433,8 @@ def main():
             print(exception)
             return Response('Error', 500)
 
-
         app.run(host=args.host, port=args.port, processes=args.processes)
-
 
 
 if __name__ == '__main__':
     main()
-
