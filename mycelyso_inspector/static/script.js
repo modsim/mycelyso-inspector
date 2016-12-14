@@ -1,5 +1,43 @@
 'use strict';
 
+var getRemarks, putRemarks, getCurrent, putCurrent;
+
+if(window.localStorage) {
+    getRemarks = function() {
+        if(localStorage['remarks']) {
+            return JSON.parse(localStorage['remarks']);
+        }
+        return {};
+    }
+    putRemarks = function(remarks) {
+        localStorage['remarks'] = JSON.stringify(remarks);
+    }
+    getCurrent = function() {
+        if(localStorage['strepto_current'])
+            return localStorage['strepto_current'];
+        else
+            return null;
+    }
+    putCurrent = function(pos) {
+        localStorage['strepto_current'] = pos;
+    }
+} else {
+    getRemarks = function() {
+        return {};
+    }
+
+    putRemarks = function(remarks) {
+    }
+
+    getCurrent = function() {
+        return null;
+    }
+
+    putCurrent = function(pos) {
+
+    }
+}
+
 var PREFIX = '';
 
 function make_url() {
@@ -18,7 +56,7 @@ streptoApp.controller('streptoPositionManagement', function($scope, $http, $root
     $scope.fileIndex = {};
 
    $scope.broadcastPosition = function() {
-        localStorage['strepto_current'] = serialize();
+        putCurrent(serialize());
         $rootScope.$emit('newPositionUrl', make_url(PREFIX, 'files', $scope.file, 'data', $scope.data_file, $scope.position));
     }
 
@@ -89,11 +127,11 @@ streptoApp.controller('streptoPositionManagement', function($scope, $http, $root
 
     if(window.location.hash.length > 0) {
         deserialize(window.location.hash.substr(1));
-        localStorage['strepto_current'] = serialize();
+        putCurrent(serialize());
     }
 
-    if(localStorage['strepto_current']) {
-        deserialize(localStorage['strepto_current']);
+    if(getCurrent()) {
+        deserialize(getCurrent());
         $scope.broadcastPosition();
     }
 
@@ -119,7 +157,6 @@ streptoApp.controller('streptoUrlAndIntervalController', function($scope, $http,
 });
 
 
-
 streptoApp.controller('streptoResultGrid', function($scope, $http, $rootScope) {
 
     function beautify(s) {
@@ -136,12 +173,7 @@ streptoApp.controller('streptoResultGrid', function($scope, $http, $rootScope) {
 
     $scope.url = '';
 
-    $scope.remark_array = {};
-
-    if(localStorage['remarks']) {
-        $scope.remark_array = JSON.parse(localStorage['remarks']);
-    }
-
+    $scope.remark_array = getRemarks();
 
     $scope.remarks = '';
 
@@ -155,7 +187,7 @@ streptoApp.controller('streptoResultGrid', function($scope, $http, $rootScope) {
                 meta: $scope.results.metadata,
                 remark: $scope.remarks
             }
-            localStorage['remarks'] = JSON.stringify($scope.remark_array);
+            putRemarks($scope.remark_array);
         } else {
             if($scope.remark_array[$scope.url]) {
                 delete $scope.remark_array[$scope.url];
