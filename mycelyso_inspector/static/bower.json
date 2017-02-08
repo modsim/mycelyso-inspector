@@ -17,13 +17,13 @@
     "tests"
   ],
   "dependencies": {
-    "angular-ui-grid": "~3.0.7",
-    "angular-ui-slider": "~0.1.4",
-    "angular": "~1.4.7",
-    "cytoscape": "~2.5.0",
-    "d3": "~3.5.8",
-    "pdfmake": "~0.1.20",
-    "lightbox2": "~2.8.1",
-    "bootstrap": "~3.3.5"
+    "angular-ui-grid": "~4.0.2",
+    "angular-ui-slider": "~0.4.0",
+    "angular": "~1.5.8",
+    "cytoscape": "~2.7.14",
+    "d3": "~3.5.17",
+    "pdfmake": "~0.1.25",
+    "lightbox2": "~2.9.0",
+    "bootstrap": "~3.3.7"
   }
 }
