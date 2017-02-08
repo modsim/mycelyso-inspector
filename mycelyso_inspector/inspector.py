@@ -22,7 +22,7 @@ try:
     from pilyso.imagestack.readers.tiff import TiffImageStack
     from pilyso.steps import image_source, Meta, rescale_image_to_uint8
 except ImportError:
-    image_source, Meta, rescale_image_to_uint8, TiffImageStack = ImageStack = Dimensions = None
+    image_source = Meta = rescale_image_to_uint8 = TiffImageStack = ImageStack = Dimensions = None
 
 import matplotlib
 matplotlib.use('Agg')
