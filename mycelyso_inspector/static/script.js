@@ -8,34 +8,38 @@ if(window.localStorage) {
             return JSON.parse(localStorage['remarks']);
         }
         return {};
-    }
+    };
+
     putRemarks = function(remarks) {
         localStorage['remarks'] = JSON.stringify(remarks);
-    }
+    };
+
     getCurrent = function() {
         if(localStorage['strepto_current'])
             return localStorage['strepto_current'];
         else
             return null;
-    }
+    };
+
     putCurrent = function(pos) {
         localStorage['strepto_current'] = pos;
-    }
+    };
+
 } else {
     getRemarks = function() {
         return {};
-    }
+    };
 
     putRemarks = function(remarks) {
-    }
+    };
 
     getCurrent = function() {
         return null;
-    }
+    };
 
     putCurrent = function(pos) {
 
-    }
+    };
 }
 
 var PREFIX = '';
@@ -58,11 +62,11 @@ streptoApp.controller('streptoPositionManagement', function($scope, $http, $root
    $scope.broadcastPosition = function() {
         putCurrent(serialize());
         $rootScope.$emit('newPositionUrl', make_url(PREFIX, 'files', $scope.file, 'data', $scope.data_file, $scope.position));
-    }
+    };
 
     $scope.prettifyNumber = function(val) {
         return Number(val.split('_')[1]);
-    }
+    };
 
     $scope.loadFileIndex = function(f) {
         $http.get(make_url(PREFIX, 'files', $scope.file, 'index.json')).success(function(response) {
@@ -74,7 +78,7 @@ streptoApp.controller('streptoPositionManagement', function($scope, $http, $root
                 $scope.broadcastPosition()
             }
         });
-    }
+    };
 
     $http.get(make_url(PREFIX, 'files', 'index.json')).success(function(response) {
         $scope.files = response.files;
@@ -169,7 +173,7 @@ streptoApp.controller('streptoResultGrid', function($scope, $http, $rootScope) {
             {name: "Key", width: 500},
             {name: "Value", width: 200}
         ]
-    }
+    };
 
     $scope.url = '';
 
@@ -186,14 +190,15 @@ streptoApp.controller('streptoResultGrid', function($scope, $http, $rootScope) {
                 position: $scope.results.meta_pos,
                 meta: $scope.results.metadata,
                 remark: $scope.remarks
-            }
+            };
+
             putRemarks($scope.remark_array);
         } else {
             if($scope.remark_array[$scope.url]) {
                 delete $scope.remark_array[$scope.url];
             }
         }
-    }
+    };
 
     $scope.getAll = function() {
         $scope.store();
@@ -207,7 +212,7 @@ streptoApp.controller('streptoResultGrid', function($scope, $http, $rootScope) {
 
         window.prompt("Copy this with Ctrl-C and insert into a spreadsheet program", str);
 
-    }
+    };
 
     $rootScope.$on('newPositionUrl', function(event, url) {
         $scope.store();
@@ -224,15 +229,11 @@ streptoApp.controller('streptoResultGrid', function($scope, $http, $rootScope) {
 
             $scope.grid.data = [];
 
-            if(false) {
-                $scope.grid.data.push($scope.results);
-            } else {
-                for(var n in $scope.results) {
-                    $scope.grid.data.push({
-                        "Key": beautify(n),
-                        "Value": $scope.results[n]
-                    });
-                }
+            for(var n in $scope.results) {
+                $scope.grid.data.push({
+                    "Key": beautify(n),
+                    "Value": $scope.results[n]
+                });
             }
 
             if($scope.remark_array[url]) {
@@ -297,7 +298,7 @@ streptoApp.controller('streptoPlotlist', function($scope, $http, $rootScope, $q)
     $scope.plotIndex = 0;
     $scope.plots = [];
 
-    // gets overriden later
+    // gets overridden later
     $scope.showPlot = function() {};
 
 
@@ -313,7 +314,7 @@ streptoApp.controller('streptoPlotlist', function($scope, $http, $rootScope, $q)
             $scope.showPlot = function() {
                 if(($scope.plots.length - 1) > $scope.plotIndex)
                 $rootScope.$emit('showPlot', url + '/' + $scope.plots[$scope.plotIndex][1])
-            }
+            };
 
             $scope.showPlot();
         });
@@ -402,7 +403,7 @@ streptoApp.controller('streptoGraph', function($scope, $http, $rootScope, $q) {
                                 })
                     });
 
-                    target.prepend('<span style="font-weight: bold;">Graph t=' + track[i].meta_t + ' / ' + (track[i].timepoint / (60.0*60.0)).toFixed(2) + 'h Distance = ' + (track[i].distance).toFixed(2) + ' µm</span><br />')
+                    target.prepend('<span style="font-weight: bold;">Graph t=' + track[i].meta_t + ' / ' + (track[i].timepoint / (60.0*60.0)).toFixed(2) + 'h Distance = ' + (track[i].distance).toFixed(2) + ' µm</span><br />');
 
                     cy.autolock(true);
 
