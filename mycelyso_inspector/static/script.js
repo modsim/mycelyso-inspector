@@ -423,7 +423,7 @@ mycelysoApp.controller('mycelysoGraph', function($scope, $http, $rootScope, $q) 
     };
 });
 
-mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) {
+mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $document, $q) {
 
     $scope.url = '';
 
@@ -487,7 +487,7 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) 
                        ).toArray()
                    );
 
-                   edgeLabels.push(graph.edgeLabels[eid]);
+                   edgeLabels.push(label);
                }
            }
 
@@ -509,10 +509,8 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) 
             view.axis({axis: 2});
             view.axis({axis: 3});
 
-            /*
             view.array({
                 'id': 'nodesLookup',
-                width: nodes.length,
                 items: 1,
                 channels: 3,
                 live: false,
@@ -522,12 +520,9 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) 
                 size: 10,
                 zOrder: 2
             });
-            */
-            console.log(edges.length);
 
             view.array({
                 'id': 'edges',
-                width: edges.length,
                 items: 2,
                 channels: 3,
                 live: false,
@@ -538,13 +533,10 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) 
                 zOrder: 1
             });
 
-            console.log("***");
-
-            var viewLabel = false;
+            var viewLabel = true;
             if(viewLabel) {
                 view.array({
                     id: 'edgeLabels',
-                    width: edgeLabelPositions.length,
                     items: 1,
                     channels: 3,
                     live: false,
@@ -556,7 +548,7 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) 
                     color: '#00ff0000',
                     size: 10,
                     zIndex: -1,
-                    visible: false
+                    visible: true
                 });
             }
 
@@ -614,18 +606,19 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) 
 
             var loader = new THREE.TextureLoader();
 
-            function addPlane(theY, what) {
+            function addPlane(theY, url) {
 
                 var mat = new THREE.MeshBasicMaterial({
-                    color: 0xffffff,
+                    color: 'lightgray',
                     map: new THREE.Texture(),
                     transparent: true,
                     side: THREE.DoubleSide
                 });
 
-                loader.load('single_' + what+ '_' + theY + '.png', function (img) {
-                    //img.anisotropy = maxAniso;
+                loader.load(url, function (img) {
+                    img.anisotropy = maxAniso;
                     img.minFilter = THREE.LinearFilter;
+                    img.magFilter = THREE.LinearFilter;
                     mat.map = img;
                 });
 
@@ -650,17 +643,20 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) 
 
             var imageMeshes = [];
 
-            /*for(var i= 0; i <=44; i++) {
-                var mesh = addPlane(i, 'binary');
+            var imagesToRender = response_data.images.binary;
+
+            for(var i in imagesToRender) {
+                var imgUrl = imagesToRender[i];
+                var mesh = addPlane(i, imgUrl);
                 three.scene.add(mesh);
                 imageMeshes.push(mesh);
-            }*/
+            }
 
             var showImages = true;
             var showEdgeLabels = false;
 
-            /*
-            jQuery(document).keypress(function(eventData) {
+
+            $document.on('keypress', function(eventData) {
 
                 if(eventData.key == 'h') {
                     for(var i = 0; i < imageMeshes.length; i++) {
@@ -673,7 +669,6 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) 
                 }
             });
 
-            */
         });
 
 

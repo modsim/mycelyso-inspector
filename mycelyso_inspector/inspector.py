@@ -15,7 +15,7 @@ from networkx import GraphMLReader
 import png
 from io import BytesIO
 
-from flask import Flask, Blueprint, redirect, jsonify, abort, g, send_file, Response
+from flask import Flask, Blueprint, redirect, jsonify, abort, g, send_file, Response, url_for
 from argparse import ArgumentParser
 
 try:
@@ -29,6 +29,15 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import pyplot
 import mpld3
+
+_url_for = url_for
+
+
+def url_for(what, **kwargs):
+    if isinstance(what, type(url_for)):
+        what = what.__name__
+    return _url_for('.' + what, **kwargs)
+
 
 bp = Blueprint('inspector', __name__)
 
@@ -53,7 +62,6 @@ def update_files():
 
 
 def num2str(num):
-    print(type(num))
     if isinstance(num, int):
         return "%d" % (num,)
     elif isinstance(num, float):
@@ -198,10 +206,19 @@ def results_per_position():
     return jsonify(results=dataframe_to_json_safe_array_of_dicts(g.RT)[0])
 
 
-def to_png(image):
+def to_png(data):
+    data = data if len(data.shape) == 3 else data.reshape(data.shape + (1,))
+    pixel_type = {1: 'L', 2: 'LA', 3: 'RGB', 4: 'RGBA'}[data.shape[2]]
     buffer = BytesIO()
-    png.from_array(image, 'L').save(buffer)
+    png.from_array(data.reshape((data.shape[0], data.shape[1] * data.shape[2])), pixel_type).save(buffer)
     return buffer.getvalue()
+
+
+def add_third_dim(data, times=1):
+    new_data = np.zeros(data.shape + (times,), dtype=data.dtype)
+    for n in range(times):
+        new_data[:, :, n] = data
+    return new_data
 
 
 def get_image_nodes_by_path(*args):
@@ -216,13 +233,25 @@ def get_images_by_request_and_path(n=1, *args):
 
 @bp.route(POSITION_PREFIX + 'collage_skeleton_every_<int:n>.png')
 def get_skeletons(n=1):
-    print(get_image_nodes_by_path('images', 'skeleton'))
     return Response(to_png(~get_images_by_request_and_path(n, 'images', 'skeleton')), mimetype='image/png')
 
 
 @bp.route(POSITION_PREFIX + 'collage_binary_every_<int:n>.png')
-def get_binary(n=1):
+def get_binaries(n=1):
     return Response(to_png(~get_images_by_request_and_path(n, 'images', 'binary')), mimetype='image/png')
+
+
+@bp.route(POSITION_PREFIX + 'skeleton_<int:num>.png')
+def get_skeleton(num=0):
+    img = add_third_dim(np.array(get_image_nodes_by_path('images', 'skeleton')[num]).astype(np.uint8), 2)
+    return Response(to_png(img), mimetype='image/png')
+
+
+@bp.route(POSITION_PREFIX + 'binary_<int:num>.png')
+def get_binary(num=0):
+    img = add_third_dim(np.array(get_image_nodes_by_path('images', 'binary')[num]).astype(np.uint8), 2)
+    return Response(to_png(img), mimetype='image/png')
+
 
 seconds_to_hours = (1 / (60.0*60.0))
 um_per_s_to_um_per_h = 60.0 * 60.0
@@ -396,7 +425,7 @@ def get_graph_for_number(number):
     return next(iter(GraphMLReader()(string=get_graphml_for_number(number))))
 
 
-def prepare_cytoscape_json(graph):
+def prepare_cytoscape_json(graph, calibration=1.0):
     return {
         "nodes": [
             {"data": {"id": int(node_id)}, "position": {"x": attr['x'], "y": attr['y']}}
@@ -405,7 +434,7 @@ def prepare_cytoscape_json(graph):
         "edges":
             list({
                      (min(int(node_a_id), int(node_b_id)), max(int(node_a_id), int(node_b_id))):
-                     {"data": {"source": int(node_a_id), "target": int(node_b_id), "weight": attr['weight']}}
+                     {"data": {"source": int(node_a_id), "target": int(node_b_id), "weight": calibration*float(attr['weight'])}}
                      for node_a_id, more in graph.edge.items()
                      for node_b_id, attr in more.items() if node_a_id != node_b_id
                  }.values())
@@ -414,15 +443,16 @@ def prepare_cytoscape_json(graph):
 @bp.route(POSITION_PREFIX + 'graphs/<number>.<ext>')
 def get_graph(number, ext):
     inject_tables()
+    calibration = float(next(iter(g.RTC.calibration)))
 
     if ext == 'xml':
         return Response(get_graphml_for_number(number), mimetype='application/xml')
     elif ext == 'json':
         if number == 'all':
             count = len(g.h5h.list_nodes(where=g.h5h.get_node(h5_join(g.h5_path, 'data', 'graphml', ))))
-            return jsonify({int(number): prepare_cytoscape_json(get_graph_for_number(number)) for number in range(count)})
+            return jsonify({int(number): prepare_cytoscape_json(get_graph_for_number(number), calibration=calibration) for number in range(count)})
         else:
-            return jsonify({int(number): prepare_cytoscape_json(get_graph_for_number(number))})
+            return jsonify({int(number): prepare_cytoscape_json(get_graph_for_number(number), calibration=calibration)})
     else:
         abort(404)
 
@@ -430,16 +460,28 @@ def get_graph(number, ext):
 @bp.route(POSITION_PREFIX + 'visualization/complete.json')
 def get_visualization():
     inject_tables()
+    calibration = float(next(iter(g.RTC.calibration)))
 
     count = len(g.h5h.list_nodes(where=g.h5h.get_node(h5_join(g.h5_path, 'data', 'graphml', ))))
     graphs = [get_graph_for_number(number) for number in range(count)]
 
     dummy_image = np.array(get_image_nodes_by_path('images', 'binary')[0])
 
+    value_kwargs = dict(file_name=g.file_name, original_name=g.original_name, position_name=g.position_name)
+
+
     result = {
         'minVector': [0.0, 0.0, 0.0],
         'maxVector': [float(dummy_image.shape[1]), float(count), float(dummy_image.shape[0])],
-        'graphs': {}
+        'graphs': {},
+        'images': {
+            'binary': {
+                n: url_for(get_binary, num=n, **value_kwargs) for n in range(len(graphs))
+            },
+            'skeleton': {
+                n: url_for(get_skeleton, num=n, **value_kwargs) for n in range(len(graphs))
+            }
+        }
     }
 
     for n, graph in enumerate(graphs):
@@ -450,7 +492,7 @@ def get_visualization():
 
         edge_dict = {
             (min(int(node_a_id), int(node_b_id)), max(int(node_a_id), int(node_b_id))):
-                dict(a=int(node_a_id), b=int(node_b_id), weight=float(attr['weight']))
+                dict(a=int(node_a_id), b=int(node_b_id), weight=calibration * float(attr['weight']))
             for node_a_id, more in graph.edge.items()
             for node_b_id, attr in more.items() if node_a_id != node_b_id
             }
