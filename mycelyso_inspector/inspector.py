@@ -11,6 +11,7 @@ import time
 import numpy as np
 
 from pandas import HDFStore
+from networkx import GraphMLReader
 import png
 from io import BytesIO
 
@@ -379,30 +380,24 @@ def get_track_plot(number, ext):
         abort(404)
 
 
-@bp.route(POSITION_PREFIX + 'graphs/<number>.json')
-def get_graph(number):
-    import networkx as nx
-    inject_tables()
-
-    # if number == 'index':
-    #     return jsonify(plots=[
-    #         ["Track %04d" % (num,), "track_plots/%d.json" % (num,)]
-    #         for num in sorted(tables.keys())])
-
+def get_graphml_for_number(number):
     number = int(number)
     pad_zeros = len('000000001')
 
-    graphml_data = np.array(g.h5h.get_node(h5_join(
+    return np.array(g.h5h.get_node(h5_join(
         g.h5_path,
         'data',
         'graphml',
         'graphml_' + (('%0' + str(pad_zeros) + 'd') % (number,)))
     )).tobytes()
 
-    reader = nx.GraphMLReader()
-    graph = next(iter(reader(string=graphml_data)))
 
-    cytoscape_json = {
+def get_graph_for_number(number):
+    return next(iter(GraphMLReader()(string=get_graphml_for_number(number))))
+
+
+def prepare_cytoscape_json(graph):
+    return {
         "nodes": [
             {"data": {"id": int(node_id)}, "position": {"x": attr['x'], "y": attr['y']}}
             for node_id, attr in graph.node.items()
@@ -414,10 +409,66 @@ def get_graph(number):
                      for node_a_id, more in graph.edge.items()
                      for node_b_id, attr in more.items() if node_a_id != node_b_id
                  }.values())
-
-
     }
-    return jsonify(cytoscape_json)
+
+@bp.route(POSITION_PREFIX + 'graphs/<number>.<ext>')
+def get_graph(number, ext):
+    inject_tables()
+
+    if ext == 'xml':
+        return Response(get_graphml_for_number(number), mimetype='application/xml')
+    elif ext == 'json':
+        if number == 'all':
+            count = len(g.h5h.list_nodes(where=g.h5h.get_node(h5_join(g.h5_path, 'data', 'graphml', ))))
+            return jsonify({int(number): prepare_cytoscape_json(get_graph_for_number(number)) for number in range(count)})
+        else:
+            return jsonify({int(number): prepare_cytoscape_json(get_graph_for_number(number))})
+    else:
+        abort(404)
+
+
+@bp.route(POSITION_PREFIX + 'visualization/complete.json')
+def get_visualization():
+    inject_tables()
+
+    count = len(g.h5h.list_nodes(where=g.h5h.get_node(h5_join(g.h5_path, 'data', 'graphml', ))))
+    graphs = [get_graph_for_number(number) for number in range(count)]
+
+    dummy_image = np.array(get_image_nodes_by_path('images', 'binary')[0])
+
+    result = {
+        'minVector': [0.0, 0.0, 0.0],
+        'maxVector': [float(dummy_image.shape[1]), float(count), float(dummy_image.shape[0])],
+        'graphs': {}
+    }
+
+    for n, graph in enumerate(graphs):
+        node_positions = {}
+
+        for node_id, attr in graph.node.items():
+            node_positions[int(node_id)] = [float(attr['x']), float(n), float(attr['y'])]
+
+        edge_dict = {
+            (min(int(node_a_id), int(node_b_id)), max(int(node_a_id), int(node_b_id))):
+                dict(a=int(node_a_id), b=int(node_b_id), weight=float(attr['weight']))
+            for node_a_id, more in graph.edge.items()
+            for node_b_id, attr in more.items() if node_a_id != node_b_id
+            }
+
+        edges = []
+        edgeLabels = []
+
+        for edge in edge_dict.values():
+            edges.append([edge['a'], edge['b']])
+            edgeLabels.append("%d µm" % (edge['weight'],))
+
+        result['graphs'][n] = {
+            'nodes': node_positions,
+            'edges': edges,
+            'edgeLabels': edgeLabels,
+        }
+
+    return jsonify(result)
 
 
 @bp.route(POSITION_PREFIX + 'tracks/<number>.json')
@@ -448,9 +499,7 @@ def get_track(number):
 
 @bp.route(POSITION_PREFIX + 'tracking.json')
 def get_tracking():
-
     inject_tables()
-
     return jsonify(results=dataframe_to_json_safe_array_of_dicts(g.TT))
 
 

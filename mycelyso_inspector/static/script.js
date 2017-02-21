@@ -376,7 +376,7 @@ mycelysoApp.controller('mycelysoGraph', function($scope, $http, $rootScope, $q) 
                 for(var i = 0; i < track.length; i++) {
                     if(track[i] === undefined)
                         continue; //strange?
-                    var graphData = responses[i].data;
+                    var graphData = responses[i].data[track[i].graph];
 
                     var target = $('<div/>', { id: 'graph' + i  }).appendTo('#graphContainer');
 
@@ -431,5 +431,252 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) 
         $scope.url = url;
         $('#graphContainer').html('');
     });
+
+    $scope.vis = function() {
+        var mathbox = mathBox({
+            element: document.getElementById('visualizationContainer'),
+            plugins: ['core', 'cursor', 'controls'],
+            controls: {
+                //klass: THREE.TrackballControls
+                klass: THREE.OrbitControls
+            }
+        });
+
+        var three = mathbox.three;
+        three.renderer.setClearColor(new THREE.Color(0xffffff), 1.0);
+
+        var maxAniso = three.renderer.getMaxAnisotropy();
+
+        mathbox.set({scale: 720, focus: 3});
+        mathbox.camera({proxy: true, position: [1, 1, 1]});
+
+
+        $q.all([$http.get(make_url($scope.url, 'visualization', 'complete.json'))])
+        .then(function(responses) {
+           var response_data = responses[0].data;
+
+           var minVector = new THREE.Vector3().fromArray(response_data.minVector),
+               maxVector = new THREE.Vector3().fromArray(response_data.maxVector);
+
+           var nodes = [],
+               edges = [],
+               edgeLabels = [],
+               edgeLabelPositions = [];
+
+           for(var gid in response_data.graphs) {
+               var graph = response_data.graphs[gid];
+
+               for(var nid in graph.nodes) {
+                   nodes.push(graph.nodes[nid]);
+               }
+
+               for(var eid = 0; eid < graph.edges.length; eid++) {
+                   var edge = graph.edges[eid];
+                   var label = graph.edgeLabels[eid];
+
+                   var a = graph.nodes[edge[0]],
+                       b = graph.nodes[edge[1]];
+
+                   edges.push(a, b);
+
+                   edgeLabelPositions.push(
+                       (new THREE.Vector3().fromArray(a)).sub(
+                           new THREE.Vector3().fromArray(b)
+                       ).divideScalar(2.0).add(
+                           new THREE.Vector3().fromArray(b)
+                       ).toArray()
+                   );
+
+                   edgeLabels.push(graph.edgeLabels[eid]);
+               }
+           }
+
+
+           var timeToPixel = 50.0;
+
+            var view = mathbox.cartesian({
+                range: [[minVector.x, maxVector.x], [minVector.y, maxVector.y], [minVector.z, maxVector.z]],
+                scale: [
+                    1.0,
+                    timeToPixel*((maxVector.y-minVector.y)/(maxVector.x-minVector.x)),
+                    (maxVector.z-minVector.z)/(maxVector.x-minVector.x)
+                ]
+            });
+
+
+
+            view.axis({axis: 1});
+            view.axis({axis: 2});
+            view.axis({axis: 3});
+
+            /*
+            view.array({
+                'id': 'nodesLookup',
+                width: nodes.length,
+                items: 1,
+                channels: 3,
+                live: false,
+                data: nodes
+            }).point({
+                color: 'gray',
+                size: 10,
+                zOrder: 2
+            });
+            */
+            console.log(edges.length);
+
+            view.array({
+                'id': 'edges',
+                width: edges.length,
+                items: 2,
+                channels: 3,
+                live: false,
+                data: edges
+            }).vector({
+                color: 'lightgray',
+                size: 10,
+                zOrder: 1
+            });
+
+            console.log("***");
+
+            var viewLabel = false;
+            if(viewLabel) {
+                view.array({
+                    id: 'edgeLabels',
+                    width: edgeLabelPositions.length,
+                    items: 1,
+                    channels: 3,
+                    live: false,
+                    data: edgeLabelPositions
+                }).format({
+                    data: edgeLabels
+                }).label({
+                    id: 'edgeLabelsLabels',
+                    color: '#00ff0000',
+                    size: 10,
+                    zIndex: -1,
+                    visible: false
+                });
+            }
+
+
+            // some more niceties
+
+            view.grid({
+                axes: "xz",
+                divideX: 10,
+                divideY: 10 * (maxVector.z-minVector.z)/(maxVector.x-minVector.x)
+            });
+
+            view.scale({
+                axis: "x",
+                divide: 5
+            }).ticks({
+                width: 2.5,
+                zBias: 1
+            }).format().label({
+                size: 16,
+                depth: 1
+            });
+
+            view.scale({
+                axis: "z",
+                divide: 5 * (maxVector.z-minVector.z)/(maxVector.x-minVector.x)
+            }).ticks({
+                width: 2.5,
+                zBias: 1
+            }).format().label({
+                size: 16,
+                depth: 1
+            });
+
+            view.scale({
+                axis: "y",
+                divide: 5 * timeToPixel *  (maxVector.y-minVector.y)/(maxVector.x-minVector.x)
+            }).ticks({
+                width: 2.5,
+                zBias: 1
+            }).format().label({
+                size: 16,
+                depth: 1
+            });
+
+            view.array({
+                data: [[maxVector.x, 0, 0], [0, maxVector.y, 0], [0, 0, maxVector.z]],
+                channels: 3,
+                live: false
+            }).text({
+                data: ["x", "t", "y"]
+            }).label({
+                color: 0x0000ff
+            });
+
+            var loader = new THREE.TextureLoader();
+
+            function addPlane(theY, what) {
+
+                var mat = new THREE.MeshBasicMaterial({
+                    color: 0xffffff,
+                    map: new THREE.Texture(),
+                    transparent: true,
+                    side: THREE.DoubleSide
+                });
+
+                loader.load('single_' + what+ '_' + theY + '.png', function (img) {
+                    //img.anisotropy = maxAniso;
+                    img.minFilter = THREE.LinearFilter;
+                    mat.map = img;
+                });
+
+
+                var mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2, 2), mat);
+                mesh.renderOrder = 2;
+
+                mesh.scale.set(
+                    1.0,
+                    (maxVector.z - minVector.z) / (maxVector.x - minVector.x),
+                    1.0
+                );
+
+                var yV = -1 + (2 * theY) / ((maxVector.y - minVector.y));
+                var yF = (timeToPixel * ((maxVector.y - minVector.y) / (maxVector.x - minVector.x)));
+
+                mesh.position.set(0, (yV * yF), 0);
+                mesh.rotation.x = -Math.PI / 2;
+
+                return mesh;
+            }
+
+            var imageMeshes = [];
+
+            /*for(var i= 0; i <=44; i++) {
+                var mesh = addPlane(i, 'binary');
+                three.scene.add(mesh);
+                imageMeshes.push(mesh);
+            }*/
+
+            var showImages = true;
+            var showEdgeLabels = false;
+
+            /*
+            jQuery(document).keypress(function(eventData) {
+
+                if(eventData.key == 'h') {
+                    for(var i = 0; i < imageMeshes.length; i++) {
+                        imageMeshes[i].visible = !showImages;
+                    }
+                    showImages = !showImages;
+                } else if(eventData.key == 'l') {
+                    showEdgeLabels = !showEdgeLabels;
+                    mathbox.select('#edgeLabelsLabels').set({visible: showEdgeLabels});
+                }
+            });
+
+            */
+        });
+
+
+    }
 
 });
