@@ -295,6 +295,8 @@ streptoApp.controller('streptoTrackingGrid', function($scope, $http, $rootScope,
 
 streptoApp.controller('streptoPlotlist', function($scope, $http, $rootScope, $q) {
 
+    $scope.url = '';
+
     $scope.plotIndex = 0;
     $scope.plots = [];
 
@@ -303,6 +305,8 @@ streptoApp.controller('streptoPlotlist', function($scope, $http, $rootScope, $q)
 
 
     $rootScope.$on('newPositionUrl', function(event, url) {
+        $scope.url = url;
+
         $q.all([
             $http.get(make_url(url, 'plots', 'index' + '.json')),
             $http.get(make_url(url, 'track_plots', 'index' + '.json'))

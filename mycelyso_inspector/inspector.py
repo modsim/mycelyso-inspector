@@ -8,9 +8,9 @@ import os
 import glob
 import time
 
-import numpy
+import numpy as np
 
-import pandas
+from pandas import HDFStore
 import png
 from io import BytesIO
 
@@ -51,8 +51,17 @@ def update_files():
         h5_files[os.path.basename(name)] = name
 
 
+def num2str(num):
+    print(type(num))
+    if isinstance(num, int):
+        return "%d" % (num,)
+    elif isinstance(num, float):
+        return "%.4f" % (num,)
+    else:
+        return str(num)
+
 @bp.route('/')
-def hello():
+def index():
     return redirect('static/index.htm')
 
 
@@ -76,7 +85,7 @@ def open_file_if_present(endpoint, values):
             if file_name not in h5_files:
                 abort(500)
 
-            open_files[file_name] = pandas.HDFStore(h5_files[file_name], 'r')
+            open_files[file_name] = HDFStore(h5_files[file_name], 'r')
 
         g.h = open_files[file_name]
         # noinspection PyProtectedMember
@@ -136,7 +145,7 @@ def original_snapshot():
 
     timepoints = ims.sizes[0]
 
-    images = [rescale_image_to_uint8(ims[i]).astype(numpy.float32)
+    images = [rescale_image_to_uint8(ims[i]).astype(np.float32)
               for i in range(0, timepoints, timepoints//images_in_collage)]
     images = [i[::images_subsampling, ::images_subsampling] for i in images]
 
@@ -145,13 +154,13 @@ def original_snapshot():
             im -= im.min()
             im /= im.max()
 
-            numpy.clip(im, minimum_percentage, maximum_percentage, out=im)
+            np.clip(im, minimum_percentage, maximum_percentage, out=im)
 
             im -= im.min()
             im /= im.max()
 
-    images = [(im*255).astype(numpy.uint8) for im in images]
-    image = numpy.concatenate(images, axis=1)
+    images = [(im*255).astype(np.uint8) for im in images]
+    image = np.concatenate(images, axis=1)
 
     return Response(to_png(image), mimetype='image/png')
 
@@ -170,8 +179,8 @@ def dataframe_to_json_safe_array_of_dicts(df):
     def safe_cast(value):
         if isinstance(value, type("")):
             return value
-        if numpy.isfinite(value):
-            return numpy.asscalar(value)
+        if np.isfinite(value):
+            return np.asscalar(value)
         return None
 
     c = list(df.columns)
@@ -194,18 +203,23 @@ def to_png(image):
     return buffer.getvalue()
 
 
+def get_image_nodes_by_path(*args):
+    return list(g.h5h.get_node(h5_join(*((g.h5_path,) + args))))
+
+
 def get_images_by_request_and_path(n=1, *args):
-    return numpy.concatenate([
-                numpy.array(i) for i in list(g.h5h.get_node(h5_join(*((g.h5_path,) + args))))[::n]
-            ], axis=1).astype(numpy.uint8)
+    return np.concatenate([
+                np.array(i) for i in get_image_nodes_by_path(*args)[::n]
+            ], axis=1).astype(np.uint8)
 
 
-@bp.route(POSITION_PREFIX + 'skeleton_<int:n>.png')
+@bp.route(POSITION_PREFIX + 'collage_skeleton_every_<int:n>.png')
 def get_skeletons(n=1):
+    print(get_image_nodes_by_path('images', 'skeleton'))
     return Response(to_png(~get_images_by_request_and_path(n, 'images', 'skeleton')), mimetype='image/png')
 
 
-@bp.route(POSITION_PREFIX + 'binary_<int:n>.png')
+@bp.route(POSITION_PREFIX + 'collage_binary_every_<int:n>.png')
 def get_binary(n=1):
     return Response(to_png(~get_images_by_request_and_path(n, 'images', 'binary')), mimetype='image/png')
 
@@ -218,51 +232,83 @@ class Plots(object):
     @staticmethod
     def tracked_segments(fig):
         pyplot.title('Tracked Segments')
-        pyplot.xlabel('time [h]')
-        pyplot.ylabel('elongation rate [µm∙h⁻¹]')
+        pyplot.xlabel('Time [h]')
+        pyplot.ylabel('Elongation rate [µm∙h⁻¹]')
         # pyplot.plot(g.RTC.timepoint * seconds_to_hours, g.RTC.covered_area)
         pyplot.hlines(g.TT.plain_regression_slope * um_per_s_to_um_per_h,
                       xmin=g.TT.timepoint_begin * seconds_to_hours,
                       xmax=g.TT.timepoint_end * seconds_to_hours)
 
+        return (
+                   range(len(g.TT)),
+                   g.TT.plain_regression_slope * um_per_s_to_um_per_h,
+                   g.TT.timepoint_begin * seconds_to_hours,
+                   g.TT.timepoint_end * seconds_to_hours
+               ), ("num", "um_per_hour", "timepoint_start", "timepoint_end")
+
     @staticmethod
     def covered_area(fig):
+        x, y = g.RTC.timepoint * seconds_to_hours, g.RTC.covered_area
+
         pyplot.title('Covered Area')
-        pyplot.xlabel('time [h]')
-        pyplot.ylabel('covered area [µm²]')
-        pyplot.plot(g.RTC.timepoint * seconds_to_hours, g.RTC.covered_area)
+        pyplot.xlabel('Time [h]')
+        pyplot.ylabel('Covered area [µm²]')
+        pyplot.plot(x, y)
+
+        return (x, y), ("time", "area",)
 
     @staticmethod
     def graph_edge_length(fig):
+        x, y = g.RTC.timepoint * seconds_to_hours, g.RTC.graph_edge_length
+
         pyplot.title('Edge Length of Graph')
-        pyplot.xlabel('time [h]')
-        pyplot.ylabel('edge length [µm]')
-        pyplot.plot(g.RTC.timepoint * seconds_to_hours, g.RTC.graph_edge_length)
+        pyplot.xlabel('Time [h]')
+        pyplot.ylabel('Edge length [µm]')
+        pyplot.plot(x, y)
+
+        return (x, y), ("time", "edge_length",)
+
+
 
     @staticmethod
     def graph_node_count(fig):
+        x, y = g.RTC.timepoint * seconds_to_hours, g.RTC.graph_node_count
+
         pyplot.title('Node Count of Graph')
-        pyplot.xlabel('time [h]')
-        pyplot.ylabel('node count [#]')
-        pyplot.plot(g.RTC.timepoint * seconds_to_hours, g.RTC.graph_node_count)
-
-    @staticmethod
-    def graph_branchness(fig):  # TODO change to HGF
-        pyplot.title('(Edge Length/Intersection Count) of Graph')
-        pyplot.xlabel('time [h]')
-        pyplot.ylabel('µm⁻¹')
-        x = numpy.array(g.RTC.timepoint) * seconds_to_hours
-        y = numpy.array(g.RTC.graph_edge_length) / numpy.array(g.RTC.graph_junction_count)
-
-        x = x[numpy.isfinite(y)]
-        y = y[numpy.isfinite(y)]
+        pyplot.xlabel('Time [h]')
+        pyplot.ylabel('Node count [#]')
         pyplot.plot(x, y)
 
+        return (x, y,), ("time", "node_count",)
 
-@bp.route(POSITION_PREFIX + 'plots/<plot_name>.json')
-def get_plot(plot_name):
+    @staticmethod
+    def graph_hyphal_growth_unit(fig):
+        pyplot.title('Hyphal Growth Unit (Total Length/Tips)')
+        pyplot.xlabel('Time [h]')
+        pyplot.ylabel('µm')
+        x = np.array(g.RTC.timepoint) * seconds_to_hours
+        y = np.array(g.RTC.graph_edge_length) / np.array(g.RTC.graph_endpoint_count)
 
-    if plot_name == 'index':
+        x = x[np.isfinite(y)]
+        y = y[np.isfinite(y)]
+        pyplot.plot(x, y)
+        
+        return (x, y,), ("time", "um",)
+
+def prepare_tsv(data, header):
+    if not isinstance(data, np.ndarray):
+        data = zip(*data)
+    return (
+               "\t".join(header) +
+               "\n" +
+               "\n".join(["\t".join(num2str(value) for value in row) for row in data])
+    )
+
+
+@bp.route(POSITION_PREFIX + 'plots/<plot_name>.<ext>')
+def get_plot(plot_name, ext):
+
+    if ext == 'json' and plot_name == 'index':
         return jsonify(plots=[
             [" ".join([x.capitalize() for x in name.split('_')]), "plots/%s.json" % (name,)]
             for name in dir(Plots) if name[0] != '_'])
@@ -277,23 +323,29 @@ def get_plot(plot_name):
         abort(404)
 
     fig = pyplot.figure()
-    to_call(fig)
+
+    data, header = to_call(fig)
 
     result = mpld3.fig_to_dict(fig)
 
     pyplot.close('all')
 
-    return jsonify(result)
+    if ext == 'json':
+        return jsonify(result)
+    elif ext == 'tsv':
+        return Response(prepare_tsv(data, header), content_type="text/plain")
+    else:
+        abort(404)
 
 
-@bp.route(POSITION_PREFIX + 'track_plots/<number>.json')
-def get_track_plot(number):
+@bp.route(POSITION_PREFIX + 'track_plots/<number>.<ext>')
+def get_track_plot(number, ext):
 
     inject_tables()
     mapping = g.h[h5_join(g.h5_path, 'tables', '_mapping_track_table_aux_tables', 'track_table_aux_tables_000000000')]
     tables = {int(index): int(row.individual_table) for index, row in mapping.iterrows()}
 
-    if number == 'index':
+    if ext == 'json' and number == 'index':
         return jsonify(plots=[["Track %04d" % (num,), "track_plots/%d.json" % (num,)] for num in sorted(tables.keys())])
 
     number = int(number)
@@ -312,11 +364,19 @@ def get_track_plot(number):
     pyplot.ylabel('distance [µm]')
     pyplot.plot(table.timepoint * seconds_to_hours, table.distance, marker='.')
 
+    data = (table.timepoint * seconds_to_hours, table.distance,)
+    header = ("time", "length",)
+
     result = mpld3.fig_to_dict(fig)
 
     pyplot.close('all')
 
-    return jsonify(result)
+    if ext == 'json':
+        return jsonify(result)
+    elif ext == 'tsv':
+        return Response(prepare_tsv(data, header), content_type="text/plain")
+    else:
+        abort(404)
 
 
 @bp.route(POSITION_PREFIX + 'graphs/<number>.json')
@@ -332,9 +392,12 @@ def get_graph(number):
     number = int(number)
     pad_zeros = len('000000001')
 
-    graphml_data = numpy.array(g.h5h.get_node(h5_join(g.h5_path, 'data', 'graphml',
-                                                      'graphml_' + (('%0' + str(pad_zeros) + 'd') % (number,))))
-                               ).tobytes()
+    graphml_data = np.array(g.h5h.get_node(h5_join(
+        g.h5_path,
+        'data',
+        'graphml',
+        'graphml_' + (('%0' + str(pad_zeros) + 'd') % (number,)))
+    )).tobytes()
 
     reader = nx.GraphMLReader()
     graph = next(iter(reader(string=graphml_data)))
@@ -377,9 +440,9 @@ def get_track(number):
     table = g.h[h5_join(g.h5_path, 'tables', '_individual_track_table_aux_tables',
                         'track_table_aux_tables_' + (('%0' + str(pad_zeros) + 'd') % (tables[number],)))]
 
-    subsets = {t: g.RTC.query('timepoint == @t') for t in numpy.array(table.timepoint)}
-    table['meta_t'] = table.timepoint.map(lambda t: numpy.array(subsets[t].meta_t)[0])
-    table['graph'] = table.timepoint.map(lambda t: numpy.array(subsets[t].graphml)[0])
+    subsets = {t: g.RTC.query('timepoint == @t') for t in np.array(table.timepoint)}
+    table['meta_t'] = table.timepoint.map(lambda t: np.array(subsets[t].meta_t)[0])
+    table['graph'] = table.timepoint.map(lambda t: np.array(subsets[t].graphml)[0])
     return jsonify(results=dataframe_to_json_safe_array_of_dicts(table))
 
 
@@ -395,7 +458,7 @@ def main():
     app = Flask(__name__)
     app.register_blueprint(bp)
 
-    argparser = ArgumentParser(description="mycelyso inspector")
+    argparser = ArgumentParser(description="mycelyso Inspector")
 
     def _error(message=''):
         argparser.print_help()

@@ -116,7 +116,7 @@
         <div class="col-md-2 sidebar">
           <h4>Plots:</h4>
           <ul class="nav nav-sidebar" ng-controller="streptoPlotlist"  style="height: 600px; overflow-y:scroll;">
-            <li ng-repeat="plot in plots" ng-class="{active: plotIndex == $index}"><a href="" ng-click="$parent.plotIndex = $index; showPlot()">{{plot[0]}}</a></li>
+            <li ng-repeat="plot in plots" ng-class="{active: plotIndex == $index}"><a href="{{url}}/{{plot[1].replace('.json', '.tsv')}}" ng-click="$parent.plotIndex = $index; showPlot(); $event.preventDefault();">{{plot[0]}}</a></li>
           </ul>
         </div>
       <div ng-controller="streptoResultGrid">
@@ -172,7 +172,7 @@
           <li>Every {{n}}. frame <div ui-slider min="1" max="100" step="1" ng-model="n" style="width: 400px;"></div></li>
         </ul>
         <div style="overflow-x: scroll; direction: rtl;" id="timeline">
-          <a href="{{url}}/{{what}}_{{n}}.png" data-lightbox="longPreview"><img ng-src="{{url}}/{{what}}_{{n}}.png" id="longPreview"  style="height: 150px;" /></a>
+          <a href="{{url}}/collage_{{what}}_every_{{n}}.png" data-lightbox="longPreview"><img ng-src="{{url}}/collage_{{what}}_every_{{n}}.png" id="longPreview"  style="height: 150px;" /></a>
         </div>
     </footer>
     <style>
