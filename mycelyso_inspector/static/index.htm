@@ -47,7 +47,7 @@
     </style>
 
   </head>
-  <body ng-app="streptoApp">
+  <body ng-app="mycelysoApp">
     <nav class="navbar navbar-default">
       <div class="container-fluid">
         <!-- Brand and toggle get grouped for better mobile display -->
@@ -62,7 +62,7 @@
         </div>
 
         <!-- Collect the nav links, forms, and other content for toggling -->
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1" ng-controller="streptoPositionManagement">
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1" ng-controller="mycelysoPositionManagement">
           <ul class="nav navbar-nav">
             <!--<li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
             <li><a href="#">Link</a></li>-->
@@ -112,14 +112,14 @@
       <div class="row">
         <div class="col-md-2 sidebar">
           <h4>Plots:</h4>
-          <ul class="nav nav-sidebar" ng-controller="streptoPlotlist"  style="height: 600px; overflow-y:scroll;">
+          <ul class="nav nav-sidebar" ng-controller="mycelysoPlotlist"  style="height: 600px; overflow-y:scroll;">
             <li ng-repeat="plot in plots" ng-class="{active: plotIndex == $index}"><a href="{{url}}/{{plot[1].replace('.json', '.tsv')}}" ng-click="$parent.plotIndex = $index; showPlot(); $event.preventDefault();">{{plot[0]}}</a></li>
           </ul>
         </div>
-      <div ng-controller="streptoResultGrid">
+      <div ng-controller="mycelysoResultGrid">
       <div class="col-md-7 main">
-        <h1>File: {{results.filename}} Position: {{results.meta_pos}} Metadata: {{results.metadata}}  <span ng-controller="streptoUrlAndIntervalController"><a href="{{url}}/original_snapshot.png" data-lightbox="snapshot"><img ng-src="{{url}}/original_snapshot.png" id="snapshot" style="height: 100px;" /></a></span></h1>
-        <div ng-controller="streptoPlotwidget"><div id="plot"></div></div>
+        <h1>File: {{results.filename}} Position: {{results.meta_pos}} Metadata: {{results.metadata}}  <span ng-controller="mycelysoUrlAndIntervalController"><a href="{{url}}/original_snapshot.png" data-lightbox="snapshot"><img ng-src="{{url}}/original_snapshot.png" id="snapshot" style="height: 100px;" /></a></span></h1>
+        <div ng-controller="mycelysoPlotwidget"><div id="plot"></div></div>
 
       </div>
        <div class="col-md-3">
@@ -140,11 +140,11 @@
     </div>
   </div>
 
-    <div ng-controller="streptoTrackingGrid">
+    <div ng-controller="mycelysoTrackingGrid">
         <div ui-grid="grid" ui-grid-auto-resize ui-grid-resize-columns ui-grid-selection ui-grid-move-columns ui-grid-exporter style=""></div>
     </div>
 
-    <div ng-controller="streptoGraph" >
+    <div ng-controller="mycelysoGraph" >
       <button type="button" class="btn btn-default" ng-click="getGraphsForTrack()">Get Graphs for selected track Row</button>
       <div id="graphContainer"></div>
 
@@ -157,7 +157,7 @@
       </style>
     </div>
 
-    <div ng-controller="strepto3DVis" >
+    <div ng-controller="mycelyso3DVis" >
       <button type="button" class="btn btn-default" ng-click="vis()">Visualize</button>
       <div id="visualizationContainer"></div>
 
@@ -175,7 +175,7 @@
         &nbsp;
     </div>
 
-    <footer ng-controller="streptoUrlAndIntervalController" class="footer">
+    <footer ng-controller="mycelysoUrlAndIntervalController" class="footer">
         <ul class="nav nav-pills">
           <li ng-class="{active: what == 'binary'}"><a href="" ng-click="what = 'binary'">Binarization</a></li>
           <li ng-class="{active: what == 'skeleton'}"><a href="" ng-click="what = 'skeleton'">Skeletonization</a></li>

@@ -15,14 +15,14 @@ if(window.localStorage) {
     };
 
     getCurrent = function() {
-        if(localStorage['strepto_current'])
-            return localStorage['strepto_current'];
+        if(localStorage['mycelyso_current'])
+            return localStorage['mycelyso_current'];
         else
             return null;
     };
 
     putCurrent = function(pos) {
-        localStorage['strepto_current'] = pos;
+        localStorage['mycelyso_current'] = pos;
     };
 
 } else {
@@ -52,10 +52,10 @@ function make_url() {
     return arr.join('/');
 }
 
-var streptoApp = angular.module('streptoApp', ['ui.slider', 'ui.grid', 'ui.grid.selection', 'ui.grid.moveColumns', 'ui.grid.exporter']);
+var mycelysoApp = angular.module('mycelysoApp', ['ui.slider', 'ui.grid', 'ui.grid.selection', 'ui.grid.moveColumns', 'ui.grid.exporter']);
 
 
-streptoApp.controller('streptoPositionManagement', function($scope, $http, $rootScope) {
+mycelysoApp.controller('mycelysoPositionManagement', function($scope, $http, $rootScope) {
     $scope.files = [];
     $scope.fileIndex = {};
 
@@ -147,7 +147,7 @@ streptoApp.controller('streptoPositionManagement', function($scope, $http, $root
 
 
 
-streptoApp.controller('streptoUrlAndIntervalController', function($scope, $http, $rootScope) {
+mycelysoApp.controller('mycelysoUrlAndIntervalController', function($scope, $http, $rootScope) {
     $scope.url = '';
 
     $rootScope.$on('newPositionUrl', function(event, url) {
@@ -161,7 +161,7 @@ streptoApp.controller('streptoUrlAndIntervalController', function($scope, $http,
 });
 
 
-streptoApp.controller('streptoResultGrid', function($scope, $http, $rootScope) {
+mycelysoApp.controller('mycelysoResultGrid', function($scope, $http, $rootScope) {
 
     function beautify(s) {
         return s.split('_').map(function(x) { return x.substring(0, 1).toUpperCase() + x.substr(1);} ).join(' ');
@@ -246,7 +246,7 @@ streptoApp.controller('streptoResultGrid', function($scope, $http, $rootScope) {
 });
 
 
-streptoApp.controller('streptoTrackingGrid', function($scope, $http, $rootScope, uiGridConstants) {
+mycelysoApp.controller('mycelysoTrackingGrid', function($scope, $http, $rootScope, uiGridConstants) {
     $scope.gridApi = null;
     $scope.grid = {
         enableGridMenu: true,
@@ -293,7 +293,7 @@ streptoApp.controller('streptoTrackingGrid', function($scope, $http, $rootScope,
 });
 
 
-streptoApp.controller('streptoPlotlist', function($scope, $http, $rootScope, $q) {
+mycelysoApp.controller('mycelysoPlotlist', function($scope, $http, $rootScope, $q) {
 
     $scope.url = '';
 
@@ -337,7 +337,7 @@ streptoApp.controller('streptoPlotlist', function($scope, $http, $rootScope, $q)
 });
 
 
-streptoApp.controller('streptoPlotwidget', function($scope, $http, $rootScope) {
+mycelysoApp.controller('mycelysoPlotwidget', function($scope, $http, $rootScope) {
     $rootScope.$on('showPlot', function(event, url) {
         $http.get(url).success(function(response) {
             $('#plot').html('');
@@ -348,7 +348,7 @@ streptoApp.controller('streptoPlotwidget', function($scope, $http, $rootScope) {
 
 
 
-streptoApp.controller('streptoGraph', function($scope, $http, $rootScope, $q) {
+mycelysoApp.controller('mycelysoGraph', function($scope, $http, $rootScope, $q) {
 
     $scope.url = '';
 
@@ -423,7 +423,7 @@ streptoApp.controller('streptoGraph', function($scope, $http, $rootScope, $q) {
     };
 });
 
-streptoApp.controller('strepto3DVis', function($scope, $http, $rootScope, $q) {
+mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $q) {
 
     $scope.url = '';
 
