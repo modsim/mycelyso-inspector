@@ -19,19 +19,18 @@
     <script src="bower_components/angular/angular.min.js"></script>
     <script src="bower_components/angular-ui-slider/src/slider.js"></script>
 
-
-
-
-    <link href="bower_components/angular-ui-grid/ui-grid.css" rel="stylesheet">
-    <script src="bower_components/angular-ui-grid/ui-grid.js"></script>
+    <link href="bower_components/angular-ui-grid/ui-grid.min.css" rel="stylesheet">
+    <script src="bower_components/angular-ui-grid/ui-grid.min.js"></script>
 
     <link href="bower_components/lightbox2/dist/css/lightbox.css" rel="stylesheet">
+    <script src="bower_components/lightbox2/dist/js/lightbox.min.js"></script>
 
     <script src="bower_components/pdfmake/build/pdfmake.min.js"></script>
     <script src="bower_components/pdfmake/build/vfs_fonts.js"></script>
 
     <script src="bower_components/cytoscape/dist/cytoscape.min.js"></script>
 
+    <script src="bower_components/mathbox/build/mathbox-bundle.js"></script>
 
     <script src="bower_components/d3/d3.min.js"></script>
     <script src="../mpld3.js"></script>
@@ -49,8 +48,6 @@
 
   </head>
   <body ng-app="streptoApp">
-
-
     <nav class="navbar navbar-default">
       <div class="container-fluid">
         <!-- Brand and toggle get grouped for better mobile display -->
@@ -61,7 +58,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="#">Mycelyso Result Inspector</a>
+          <a class="navbar-brand" href="#"><img src="mycelyso.svg" style="height: 1.0em; display: inline;" alt="mycelyso"/> Inspector</a>
         </div>
 
         <!-- Collect the nav links, forms, and other content for toggling -->
@@ -160,6 +157,19 @@
       </style>
     </div>
 
+    <div ng-controller="strepto3DVis" >
+      <button type="button" class="btn btn-default" ng-click="vis()">Visualize</button>
+      <div id="visualizationContainer"></div>
+
+      <style>
+        #visualizationContainer div {
+          display: inline-block;
+          width: 400px;
+          height: 800px;
+        }
+      </style>
+    </div>
+
 
     <div style="height: 500px;">
         &nbsp;
@@ -183,7 +193,6 @@
         background-color: white;
       }
     </style>
-    <script src="bower_components/lightbox2/dist/js/lightbox.min.js"></script>
     <div class="jumbotron" id="about" style="display: none;">
         <h1>About</h1>
     </div>

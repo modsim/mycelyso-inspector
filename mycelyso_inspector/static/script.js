@@ -339,12 +339,8 @@ streptoApp.controller('streptoPlotlist', function($scope, $http, $rootScope, $q)
 
 streptoApp.controller('streptoPlotwidget', function($scope, $http, $rootScope) {
     $rootScope.$on('showPlot', function(event, url) {
-        var element = document.getElementById('plot');
-
-        while(element.children.length > 0)
-            element.removeChild(element.children[0]);
-
         $http.get(url).success(function(response) {
+            $('#plot').html('');
             mpld3.draw_figure('plot', response);
         });
     });
@@ -425,4 +421,15 @@ streptoApp.controller('streptoGraph', function($scope, $http, $rootScope, $q) {
 
         });
     };
+});
+
+streptoApp.controller('strepto3DVis', function($scope, $http, $rootScope, $q) {
+
+    $scope.url = '';
+
+    $rootScope.$on('newPositionUrl', function(event, url) {
+        $scope.url = url;
+        $('#graphContainer').html('');
+    });
+
 });
