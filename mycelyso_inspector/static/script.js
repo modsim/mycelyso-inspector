@@ -150,6 +150,10 @@ mycelysoApp.controller('mycelysoUrlAndIntervalController', function($scope, $htt
 
 mycelysoApp.controller('mycelysoResultGrid', function($scope, $http, $rootScope) {
 
+    $scope.prettifyFilename = function(name) {
+        return ('' + name).split('?')[0];
+    };
+
     function beautify(s) {
         return s.split('_').map(function(x) { return x.substring(0, 1).toUpperCase() + x.substr(1);} ).join(' ');
     }

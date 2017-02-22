@@ -118,7 +118,7 @@
         </div>
       <div ng-controller="mycelysoResultGrid">
       <div class="col-md-7 main">
-        <h1>File: {{results.filename}} Position: {{results.meta_pos}} Metadata: {{results.metadata}}  <span ng-controller="mycelysoUrlAndIntervalController"><a href="{{url}}/original_snapshot.png" data-lightbox="snapshot"><img ng-src="{{url}}/original_snapshot.png" id="snapshot" style="height: 100px;" /></a></span></h1>
+        <h1>File: {{prettifyFilename(results.filename)}} Position: {{results.meta_pos}} Metadata: {{results.metadata}}  <span ng-controller="mycelysoUrlAndIntervalController"><a href="{{url}}/original_snapshot.png" data-lightbox="snapshot"><img ng-src="{{url}}/original_snapshot.png" id="snapshot" style="height: 100px;" /></a></span></h1>
         <div ng-controller="mycelysoPlotwidget"><div id="plot"></div></div>
 
       </div>
