@@ -146,7 +146,11 @@ def original_snapshot():
     path = str(g.RT.filename_complete[0])
 
     if path not in imagestacks:
-        imagestacks[path] = ImageStack(path)
+        try:
+            imagestacks[path] = ImageStack(path)
+        except FileNotFoundError:
+            # crude fallback... might the image be in the same folder?
+            imagestacks[path] = ImageStack(path.split("/")[-1])
 
     ims = imagestacks[path]
 
