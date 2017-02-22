@@ -158,7 +158,10 @@
     </div>
 
     <div ng-controller="mycelyso3DVis" >
-      <button type="button" class="btn btn-default" ng-click="vis()">Visualize</button>
+
+      <br /><button type="button" class="btn btn-default" ng-click="vis()">Visualize</button>
+      Visible time: <div ui-slider="timeSliderOptions" tick min="0" max="{{maxTime}}" step="1" ng-model="timeSlider"></div>
+      <br />
       <style>
         #visualizationContainer {
           display: inline-block;

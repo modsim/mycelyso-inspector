@@ -1,46 +1,35 @@
 'use strict';
 
-var getRemarks, putRemarks, getCurrent, putCurrent;
+var LS_MYCELYSO_CURRENT = 'mycelyso_current';
+var LS_MYCELYSO_REMARKS = 'mycelyso_remarks';
 
-if(window.localStorage) {
-    getRemarks = function() {
-        if(localStorage['remarks']) {
-            return JSON.parse(localStorage['remarks']);
+function MycelysoPersistence(backend) {
+    this.backend = backend;
+
+    this.getRemarks = function() {
+        if(this.backend[LS_MYCELYSO_REMARKS]) {
+            return JSON.parse(this.backend[LS_MYCELYSO_REMARKS]);
         }
         return {};
     };
 
-    putRemarks = function(remarks) {
-        localStorage['remarks'] = JSON.stringify(remarks);
+    this.putRemarks = function(remarks) {
+        this.backend[LS_MYCELYSO_REMARKS] = JSON.stringify(remarks);
     };
 
-    getCurrent = function() {
-        if(localStorage['mycelyso_current'])
-            return localStorage['mycelyso_current'];
+    this.getCurrent = function() {
+        if(this.backend[LS_MYCELYSO_CURRENT])
+            return JSON.parse(this.backend[LS_MYCELYSO_CURRENT]);
         else
             return null;
     };
 
-    putCurrent = function(pos) {
-        localStorage['mycelyso_current'] = pos;
-    };
-
-} else {
-    getRemarks = function() {
-        return {};
-    };
-
-    putRemarks = function(remarks) {
-    };
-
-    getCurrent = function() {
-        return null;
-    };
-
-    putCurrent = function(pos) {
-
+    this.putCurrent = function(pos) {
+        this.backend[LS_MYCELYSO_CURRENT] = JSON.stringify(pos);
     };
 }
+
+var storage = new MycelysoPersistence(window.localStorage ? window.localStorage : {});
 
 var PREFIX = '';
 
@@ -60,7 +49,7 @@ mycelysoApp.controller('mycelysoPositionManagement', function($scope, $http, $ro
     $scope.fileIndex = {};
 
    $scope.broadcastPosition = function() {
-        putCurrent(serialize());
+        storage.putCurrent(serialize());
         $rootScope.$emit('newPositionUrl', make_url(PREFIX, 'files', $scope.file, 'data', $scope.data_file, $scope.position));
     };
 
@@ -109,8 +98,6 @@ mycelysoApp.controller('mycelysoPositionManagement', function($scope, $http, $ro
 
 
     function deserialize(s) {
-        s = s.split(',');
-
         if(s.length > 0) {
             $scope.file = s[0];
             $scope.loadFileIndex($scope.file);
@@ -125,17 +112,17 @@ mycelysoApp.controller('mycelysoPositionManagement', function($scope, $http, $ro
     }
 
     function serialize() {
-        return $scope.file + ',' + $scope.data_file + ',' + $scope.position;
+        return [$scope.file, $scope.data_file, $scope.position];
     }
 
 
     if(window.location.hash.length > 0) {
         deserialize(window.location.hash.substr(1));
-        putCurrent(serialize());
+        storage.putCurrent(serialize());
     }
 
-    if(getCurrent()) {
-        deserialize(getCurrent());
+    if(storage.getCurrent()) {
+        deserialize(storage.getCurrent());
         $scope.broadcastPosition();
     }
 
@@ -177,7 +164,7 @@ mycelysoApp.controller('mycelysoResultGrid', function($scope, $http, $rootScope)
 
     $scope.url = '';
 
-    $scope.remark_array = getRemarks();
+    $scope.remark_array = storage.getRemarks();
 
     $scope.remarks = '';
 
@@ -192,7 +179,7 @@ mycelysoApp.controller('mycelysoResultGrid', function($scope, $http, $rootScope)
                 remark: $scope.remarks
             };
 
-            putRemarks($scope.remark_array);
+            storage.putRemarks($scope.remark_array);
         } else {
             if($scope.remark_array[$scope.url]) {
                 delete $scope.remark_array[$scope.url];
@@ -425,6 +412,17 @@ mycelysoApp.controller('mycelysoGraph', function($scope, $http, $rootScope, $q) 
 
 mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $document, $q) {
 
+    $scope.maxTime = 0;
+    $scope.timeSlider = [0, $scope.maxTime];
+    $scope.timeSliderOptions = {
+        range: true,
+        tick: true,
+        updateOn: 'slidestop slide',
+        slide: function(event, ui) {
+            $scope.slide();
+        }
+    };
+
     $scope.url = '';
 
     $rootScope.$on('newPositionUrl', function(event, url) {
@@ -504,13 +502,15 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $doc
             });
 
 
+            $scope.maxTime = maxVector.y;
+            $scope.timeSlider[1] = $scope.maxTime;
 
             view.axis({axis: 1});
             view.axis({axis: 2});
             view.axis({axis: 3});
 
             view.array({
-                'id': 'nodesLookup',
+                'id': 'nodes',
                 items: 1,
                 channels: 3,
                 live: false,
@@ -542,6 +542,7 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $doc
                     live: false,
                     data: edgeLabelPositions
                 }).format({
+                    id: 'edgeLabelValues',
                     data: edgeLabels
                 }).label({
                     id: 'edgeLabelsLabels',
@@ -609,10 +610,11 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $doc
             function addPlane(theY, url) {
 
                 var mat = new THREE.MeshBasicMaterial({
-                    color: 'lightgray',
+                    color: 'black',
                     map: new THREE.Texture(),
                     transparent: true,
-                    side: THREE.DoubleSide
+                    side: THREE.DoubleSide,
+                    alphaTest: 0.5,
                 });
 
                 loader.load(url, function (img) {
@@ -657,17 +659,44 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $doc
 
 
             $document.on('keypress', function(eventData) {
-
                 if(eventData.key == 'h') {
-                    for(var i = 0; i < imageMeshes.length; i++) {
-                        imageMeshes[i].visible = !showImages;
-                    }
                     showImages = !showImages;
+                    $scope.slide();
                 } else if(eventData.key == 'l') {
                     showEdgeLabels = !showEdgeLabels;
                     mathbox.select('#edgeLabelsLabels').set({visible: showEdgeLabels});
                 }
             });
+
+            $scope.slide = function() {
+                var lower = $scope.timeSlider[0];
+                var higher = $scope.timeSlider[1];
+
+                mathbox.select('#nodes').set({data:
+                    nodes.filter(function(vec) { return vec[1] >= lower && vec[1] <= higher; })
+                });
+
+                mathbox.select('#edges').set({data:
+                    edges.filter(function(vec) { return vec[1] >= lower && vec[1] <= higher; })
+                });
+
+                mathbox.select('#edgeLabels').set({data:
+                    edgeLabelPositions.filter(function(vec) { return vec[1] >= lower && vec[1] <= higher; })
+                });
+
+                mathbox.select('#edgeLabelValues').set({data:
+                    edgeLabels.filter(function(str, i) { var vec = edgeLabelPositions[i]; return vec[1] >= lower && vec[1] <= higher; })
+                });
+
+                imageMeshes.forEach(function(item, n) {
+                    if (n >= lower && n <= higher) {
+                        item.visible = showImages;
+                    } else {
+                        item.visible = false;
+                    }
+                });
+
+            }
 
         });
 
