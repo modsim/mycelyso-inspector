@@ -19,7 +19,7 @@ def get_all_files(path):
 setup(
     name='mycelyso_inspector',
     version='0.0.1',
-    description='MYCEL anaLYsis SOftware - Inspector',
+    description='MYCElium anaLYsis SOftware - Inspector',
     long_description='',
     author='Christian C. Sachs',
     author_email='c.sachs@fz-juelich.de',
