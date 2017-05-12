@@ -311,7 +311,7 @@ mycelysoApp.controller('mycelysoPlotlist', function ($scope, $http, $rootScope, 
             $scope.plots = $scope.plots.concat(responses[1].data.plots);
 
             $scope.showPlot = function () {
-                if (($scope.plots.length - 1) > $scope.plotIndex)
+                if ($scope.plots.length >= $scope.plotIndex)
                     $rootScope.$emit('showPlot', url + '/' + $scope.plots[$scope.plotIndex][1])
             };
 
