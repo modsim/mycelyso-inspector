@@ -1,11 +1,12 @@
 <!DOCTYPE html>
+<!--suppress ALL -->
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Mycelyso Result Inspector</title>
+    <title>mycelyso Inspector</title>
 
     <script src="bower_components/jquery/dist/jquery.min.js"></script>
     <script src="bower_components/jquery-ui/jquery-ui.min.js"></script>
@@ -44,159 +45,173 @@
             background-color: #428bca;
             color: white;
         }
-    </style>
 
-  </head>
-  <body ng-app="mycelysoApp">
-    <nav class="navbar navbar-default">
-      <div class="container-fluid">
-        <!-- Brand and toggle get grouped for better mobile display -->
-        <div class="navbar-header">
-          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
-            <span class="sr-only">Toggle navigation</span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-          </button>
-          <a class="navbar-brand" href="#"><img src="mycelyso.svg" style="height: 1.0em; display: inline;" alt="mycelyso"/> Inspector</a>
-        </div>
-
-        <!-- Collect the nav links, forms, and other content for toggling -->
-        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1" ng-controller="mycelysoPositionManagement">
-          <ul class="nav navbar-nav">
-            <!--<li class="active"><a href="#">Link <span class="sr-only">(current)</span></a></li>
-            <li><a href="#">Link</a></li>-->
-
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{file ? file : 'Select result file'}} <span class="caret"></span></a>
-              <ul class="dropdown-menu">
-                <li ng-repeat="file in files"><a href="" ng-click="$parent.file = file; loadFileIndex(file)">{{file}}</a></li>
-              </ul>
-            </li>
-
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{data_file ? data_file : 'Select experiment image file'}} <span class="caret"></span></a>
-              <ul class="dropdown-menu">
-                <li ng-repeat="(data_file, positions) in fileIndex"><a href="" ng-click="$parent.data_file = data_file; $parent.position = fileIndex[data_file][0]; broadcastPosition()">{{data_file}}</a></li>
-              </ul>
-            </li>
-
-
-            <li><a href="" ng-click="previousPosition()"><span class="glyphicon glyphicon-menu-left"></span></a></li>
-            <li class="dropdown">
-              <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{position ? prettifyNumber(position) : 'Select position'}} <span class="caret"></span></a>
-              <ul class="dropdown-menu">
-                <li ng-repeat="position in fileIndex[data_file]"><a href=""
-                   ng-click="$parent.position = position; broadcastPosition()"
-                >{{prettifyNumber(position)}}</a></li>
-              </ul>
-            </li>
-            <li><a href="" ng-click="nextPosition()"><span class="glyphicon glyphicon-menu-right"></span></a></li>
-
-          </ul>
-          <!--<form class="navbar-form navbar-left" role="search">
-            <div class="form-group">
-              <input type="text" class="form-control" placeholder="Search">
-            </div>
-            <button type="submit" class="btn btn-default">Submit</button>
-          </form> -->
-          <ul class="nav navbar-nav navbar-right">
-            <!--<li><a href="#">About</a></li> -->
-          </ul>
-        </div><!-- /.navbar-collapse -->
-      </div><!-- /.container-fluid -->
-    </nav>
-
-
-    <div class="container-fluid">
-      <div class="row">
-        <div class="col-md-2 sidebar">
-          <h4>Plots:</h4>
-          <ul class="nav nav-sidebar" ng-controller="mycelysoPlotlist"  style="height: 600px; overflow-y:scroll;">
-            <li ng-repeat="plot in plots" ng-class="{active: plotIndex == $index}"><a href="{{url}}/{{plot[1].replace('.json', '.tsv')}}" ng-click="$parent.plotIndex = $index; showPlot(); $event.preventDefault();">{{plot[0]}}</a></li>
-          </ul>
-        </div>
-      <div ng-controller="mycelysoResultGrid">
-      <div class="col-md-7 main">
-        <h1>File: {{prettifyFilename(results.filename)}} Position: {{results.meta_pos}} Metadata: {{results.metadata}}  <span ng-controller="mycelysoUrlAndIntervalController"><a href="{{url}}/original_snapshot.png" data-lightbox="snapshot"><img ng-src="{{url}}/original_snapshot.png" id="snapshot" style="height: 100px;" /></a></span></h1>
-        <div ng-controller="mycelysoPlotwidget"><div id="plot"></div></div>
-
-      </div>
-       <div class="col-md-3">
-        <div class="sidebar-module sidebar-module-inset">
-          <h4>Remarks:</h4>
-           <form>
-              <div class="form-group">
-                <label for="remarks">Remarks</label>
-                <input type="text" class="form-control" id="remarks" placeholder="" ng-model="remarks" ng-change="store()"/>
-              </div>
-              <button type="button" class="btn btn-default" ng-click="getAll()">Get All</button>
-            </form>
-          <h4>Properties:</h4>
-           <div ui-grid="grid" ui-grid-auto-resize ui-grid-resize-columns style="width:100%; height: 600px; "></div>
-        </div>
-      </div>
-      </div>
-    </div>
-  </div>
-
-    <div ng-controller="mycelysoTrackingGrid">
-        <div ui-grid="grid" ui-grid-auto-resize ui-grid-resize-columns ui-grid-selection ui-grid-move-columns ui-grid-exporter style=""></div>
-    </div>
-
-    <div ng-controller="mycelysoGraph" >
-      <button type="button" class="btn btn-default" ng-click="getGraphsForTrack()">Get Graphs for selected track Row</button>
-      <div id="graphContainer"></div>
-
-      <style>
         #graphContainer div {
-          display: inline-block;
-          width: 400px;
-          height: 800px;
+            display: inline-block;
+            width: 400px;
+            height: 800px;
         }
-      </style>
-    </div>
 
-    <div ng-controller="mycelyso3DVis" >
-
-      <br /><button type="button" class="btn btn-default" ng-click="vis()">Visualize</button>
-      Visible time: <div ui-slider="timeSliderOptions" tick min="0" max="{{maxTime}}" step="1" ng-model="timeSlider"></div>
-      <br />
-      <style>
         #visualizationContainer {
-          display: inline-block;
-          width: 100%;
-          height: 800px;
+            display: inline-block;
+            width: 100%;
+            height: 800px;
         }
-      </style>
-      <div id="visualizationContainer"></div>
-    </div>
 
-
-    <div style="height: 500px;">
-        &nbsp;
-    </div>
-
-    <footer ng-controller="mycelysoUrlAndIntervalController" class="footer">
-        <ul class="nav nav-pills">
-          <li ng-class="{active: what == 'binary'}"><a href="" ng-click="what = 'binary'">Binarization</a></li>
-          <li ng-class="{active: what == 'skeleton'}"><a href="" ng-click="what = 'skeleton'">Skeletonization</a></li>
-          <li>Every {{n}}. frame <div ui-slider min="1" max="100" step="1" ng-model="n" style="width: 400px;"></div></li>
-        </ul>
-        <div style="overflow-x: scroll; direction: rtl;" id="timeline">
-          <a href="{{url}}/collage_{{what}}_every_{{n}}.png" data-lightbox="longPreview"><img ng-src="{{url}}/collage_{{what}}_every_{{n}}.png" id="longPreview"  style="height: 150px;" /></a>
-        </div>
-    </footer>
-    <style>
-      .footer {
-        position: fixed;
-        bottom: 0;
-        width: 100%;
-        background-color: white;
-      }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: white;
+        }
     </style>
-    <div class="jumbotron" id="about" style="display: none;">
-        <h1>About</h1>
+
+</head>
+<body ng-app="mycelysoApp">
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#"><img src="mycelyso.svg" style="height: 1.0em; display: inline;"
+                                                  alt="mycelyso"/> Inspector</a>
+        </div>
+
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1"
+             ng-controller="mycelysoPositionManagement">
+            <ul class="nav navbar-nav">
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                       aria-expanded="false">{{file ? file : 'Select result file'}} <span class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li ng-repeat="file in files"><a href="" ng-click="$parent.file = file; loadFileIndex(file)">{{file}}</a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                       aria-expanded="false">{{data_file ? data_file : 'Select experiment image file'}} <span
+                            class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li ng-repeat="(data_file, positions) in fileIndex"><a href=""
+                                                                               ng-click="$parent.data_file = data_file; $parent.position = fileIndex[data_file][0]; broadcastPosition()">{{data_file}}</a>
+                        </li>
+                    </ul>
+                </li>
+
+
+                <li><a href="" ng-click="previousPosition()"><span class="glyphicon glyphicon-menu-left"></span></a>
+                </li>
+                <li class="dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                       aria-expanded="false">{{position ? prettifyNumber(position) : 'Select position'}} <span
+                            class="caret"></span></a>
+                    <ul class="dropdown-menu">
+                        <li ng-repeat="position in fileIndex[data_file]"><a href=""
+                                                                            ng-click="$parent.position = position; broadcastPosition()"
+                        >{{prettifyNumber(position)}}</a></li>
+                    </ul>
+                </li>
+                <li><a href="" ng-click="nextPosition()"><span class="glyphicon glyphicon-menu-right"></span></a></li>
+
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+                <!--<li><a href="#">About</a></li> -->
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+</nav>
+
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar">
+            <h4>Plots:</h4>
+            <ul class="nav nav-sidebar" ng-controller="mycelysoPlotlist" style="height: 600px; overflow-y:scroll;">
+                <li ng-repeat="plot in plots" ng-class="{active: plotIndex == $index}"><a
+                        href="{{url}}/{{plot[1].replace('.json', '.tsv')}}"
+                        ng-click="$parent.plotIndex = $index; showPlot(); $event.preventDefault();">{{plot[0]}}</a></li>
+            </ul>
+        </div>
+        <div ng-controller="mycelysoResultGrid">
+            <div class="col-md-7 main">
+                <h1>File: {{prettifyFilename(results.filename)}} Position: {{results.meta_pos}} Metadata:
+                    {{results.metadata}} <span ng-controller="mycelysoUrlAndIntervalController"><a
+                            href="{{url}}/original_snapshot.png" data-lightbox="snapshot"><img
+                            ng-src="{{url}}/original_snapshot.png" id="snapshot" src="" style="height: 100px;"/></a></span>
+                </h1>
+                <div ng-controller="mycelysoPlotwidget">
+                    <div id="plot"></div>
+                </div>
+
+            </div>
+            <div class="col-md-3">
+                <div class="sidebar-module sidebar-module-inset">
+                    <h4>Remarks:</h4>
+                    <form>
+                        <div class="form-group">
+                            <label for="remarks">Remarks</label>
+                            <input type="text" class="form-control" id="remarks" placeholder="" ng-model="remarks"
+                                   ng-change="store()"/>
+                        </div>
+                        <button type="button" class="btn btn-default" ng-click="getAll()">Get All</button>
+                    </form>
+                    <h4>Properties:</h4>
+                    <div ui-grid="grid" ui-grid-auto-resize ui-grid-resize-columns
+                         style="width:100%; height: 600px; "></div>
+                </div>
+            </div>
+        </div>
     </div>
-  </body>
+</div>
+
+<div ng-controller="mycelysoTrackingGrid">
+    <div ui-grid="grid" ui-grid-auto-resize ui-grid-resize-columns ui-grid-selection ui-grid-move-columns
+         ui-grid-exporter style=""></div>
+</div>
+
+<div ng-controller="mycelysoGraph">
+    <button type="button" class="btn btn-default" ng-click="getGraphsForTrack()">Get Graphs for selected track Row
+    </button>
+    <div id="graphContainer"></div>
+</div>
+
+<div ng-controller="mycelyso3DVis">
+
+    <br/>
+    <button type="button" class="btn btn-default" ng-click="vis()">Visualize</button>
+    Visible time:
+    <div ui-slider="timeSliderOptions" tick min="0" max="{{maxTime}}" step="1" ng-model="timeSlider"></div>
+    <br/>
+    <div id="visualizationContainer"></div>
+</div>
+
+
+<div style="height: 500px;">
+    &nbsp;
+</div>
+
+<footer ng-controller="mycelysoUrlAndIntervalController" class="footer">
+    <ul class="nav nav-pills">
+        <li ng-class="{active: what == 'binary'}"><a href="" ng-click="what = 'binary'">Binarization</a></li>
+        <li ng-class="{active: what == 'skeleton'}"><a href="" ng-click="what = 'skeleton'">Skeletonization</a></li>
+        <li>Every {{n}}. frame
+            <div ui-slider min="1" max="100" step="1" ng-model="n" style="width: 400px;"></div>
+        </li>
+    </ul>
+    <div style="overflow-x: scroll; direction: rtl;" id="timeline">
+        <a href="{{url}}/collage_{{what}}_every_{{n}}.png" data-lightbox="longPreview"><img
+                ng-src="{{url}}/collage_{{what}}_every_{{n}}.png" id="longPreview" src="" style="height: 150px;"/></a>
+    </div>
+</footer>
+<div class="jumbotron" id="about" style="display: none;">
+    <h1>About</h1>
+</div>
+</body>
 </html>
