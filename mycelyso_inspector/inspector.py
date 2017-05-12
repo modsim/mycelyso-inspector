@@ -7,6 +7,7 @@ import sys
 import os
 import glob
 import time
+import webbrowser
 
 import numpy as np
 
@@ -19,15 +20,17 @@ from flask import Flask, Blueprint, redirect, jsonify, abort, g, send_file, Resp
 from argparse import ArgumentParser
 
 try:
-    from pilyso.imagestack.imagestack import ImageStack, Dimensions
-    from pilyso.imagestack.readers.tiff import TiffImageStack
-    from pilyso.steps import image_source, Meta, rescale_image_to_uint8
+    from mycelyso.pilyso.imagestack import ImageStack, Dimensions
+    from mycelyso.pilyso.imagestack.readers import *
+    from mycelyso.pilyso.steps import image_source, Meta, rescale_image_to_uint8
 except ImportError:
     image_source = Meta = rescale_image_to_uint8 = TiffImageStack = ImageStack = Dimensions = None
 
 import matplotlib
 matplotlib.use('Agg')
+# noinspection PyPep8
 from matplotlib import pyplot
+# noinspection PyPep8
 import mpld3
 
 _url_for = url_for
@@ -69,6 +72,7 @@ def num2str(num):
     else:
         return str(num)
 
+
 @bp.route('/')
 def index():
     return redirect('static/index.htm')
@@ -109,6 +113,7 @@ def parse_h5_path_if_present(endpoint, values):
         g.h5_path = h5_join(h5_base_node, g.original_name, g.position_name)
 
 
+# noinspection PyUnresolvedReferences
 @bp.route('/files/<file_name>/index.json')
 def get_file_contents():
     result = {}
@@ -137,7 +142,7 @@ minimum_percentage, maximum_percentage = 0.0, 0.5
 imagestacks = {}
 
 
-# noinspection PyUnresolvedReferences
+# noinspection PyUnresolvedReferences,PyCallingNonCallable
 @bp.route(POSITION_PREFIX + 'original_snapshot.png')
 def original_snapshot():
     assert ImageStack
@@ -302,8 +307,6 @@ class Plots(object):
 
         return (x, y), ("time", "edge_length",)
 
-
-
     @staticmethod
     def graph_node_count(fig):
         x, y = g.RTC.timepoint * seconds_to_hours, g.RTC.graph_node_count
@@ -328,6 +331,7 @@ class Plots(object):
         pyplot.plot(x, y)
         
         return (x, y,), ("time", "um",)
+
 
 def prepare_tsv(data, header):
     if not isinstance(data, np.ndarray):
@@ -377,7 +381,7 @@ def get_track_plot(number, ext):
 
     inject_tables()
     mapping = g.h[h5_join(g.h5_path, 'tables', '_mapping_track_table_aux_tables', 'track_table_aux_tables_000000000')]
-    tables = {int(index): int(row.individual_table) for index, row in mapping.iterrows()}
+    tables = {int(index_): int(row.individual_table) for index_, row in mapping.iterrows()}
 
     if ext == 'json' and number == 'index':
         return jsonify(plots=[["Track %04d" % (num,), "track_plots/%d.json" % (num,)] for num in sorted(tables.keys())])
@@ -438,11 +442,16 @@ def prepare_cytoscape_json(graph, calibration=1.0):
         "edges":
             list({
                      (min(int(node_a_id), int(node_b_id)), max(int(node_a_id), int(node_b_id))):
-                     {"data": {"source": int(node_a_id), "target": int(node_b_id), "weight": calibration*float(attr['weight'])}}
+                     {"data": {
+                         "source": int(node_a_id),
+                         "target": int(node_b_id),
+                         "weight": calibration*float(attr['weight'])
+                     }}
                      for node_a_id, more in graph.edge.items()
                      for node_b_id, attr in more.items() if node_a_id != node_b_id
                  }.values())
     }
+
 
 @bp.route(POSITION_PREFIX + 'graphs/<number>.<ext>')
 def get_graph(number, ext):
@@ -454,9 +463,14 @@ def get_graph(number, ext):
     elif ext == 'json':
         if number == 'all':
             count = len(g.h5h.list_nodes(where=g.h5h.get_node(h5_join(g.h5_path, 'data', 'graphml', ))))
-            return jsonify({int(number): prepare_cytoscape_json(get_graph_for_number(number), calibration=calibration) for number in range(count)})
+            return jsonify({
+                int(number): prepare_cytoscape_json(get_graph_for_number(number), calibration=calibration)
+                for number in range(count)
+                })
         else:
-            return jsonify({int(number): prepare_cytoscape_json(get_graph_for_number(number), calibration=calibration)})
+            return jsonify({
+                int(number): prepare_cytoscape_json(get_graph_for_number(number), calibration=calibration)
+            })
     else:
         abort(404)
 
@@ -472,7 +486,6 @@ def get_visualization():
     dummy_image = np.array(get_image_nodes_by_path('images', 'binary')[0])
 
     value_kwargs = dict(file_name=g.file_name, original_name=g.original_name, position_name=g.position_name)
-
 
     result = {
         'minVector': [0.0, 0.0, 0.0],
@@ -502,16 +515,16 @@ def get_visualization():
             }
 
         edges = []
-        edgeLabels = []
+        edge_labels = []
 
         for edge in edge_dict.values():
             edges.append([edge['a'], edge['b']])
-            edgeLabels.append("%d µm" % (edge['weight'],))
+            edge_labels.append("%d µm" % (edge['weight'],))
 
         result['graphs'][n] = {
             'nodes': node_positions,
             'edges': edges,
-            'edgeLabels': edgeLabels,
+            'edgeLabels': edge_labels,
         }
 
     return jsonify(result)
@@ -522,7 +535,7 @@ def get_track(number):
 
     inject_tables()
     mapping = g.h[h5_join(g.h5_path, 'tables', '_mapping_track_table_aux_tables', 'track_table_aux_tables_000000000')]
-    tables = {int(index): int(row.individual_table) for index, row in mapping.iterrows()}
+    tables = {int(index_): int(row.individual_table) for index_, row in mapping.iterrows()}
 
     if number == 'index':
         return jsonify(tracks=[num for num in sorted(tables.keys())])
@@ -566,6 +579,7 @@ def main():
     argparser.add_argument('-b', '--bind', dest='host', type=str, default='0.0.0.0')
     argparser.add_argument('-P', '--processes', dest='processes', type=int, default=8)
     argparser.add_argument('-d', '--debug', dest='debug', default=False, action='store_true')
+    argparser.add_argument('-nb', '--no-browser', dest='browser', default=True, action='store_false')
 
     args = argparser.parse_args()
 
@@ -583,6 +597,9 @@ def main():
             delta = time.time() - g.start_time
             print("took %.3fs" % (delta,))
 
+        if args.browser:
+            webbrowser.open('http://%s:%d/' % (args.host, args.port))
+
         app.run(host=args.host, port=args.port)
     else:
 
@@ -590,6 +607,9 @@ def main():
         def internal_error(exception):
             print(exception)
             return Response('Error', 500)
+
+        if args.browser:
+            webbrowser.open('http://%s:%d/' % (args.host, args.port))
 
         app.run(host=args.host, port=args.port, processes=args.processes)
 
