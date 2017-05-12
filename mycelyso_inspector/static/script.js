@@ -80,19 +80,19 @@ mycelysoApp.controller('mycelysoPositionManagement', function($scope, $http, $ro
     });
 
     $scope.previousPosition = function() {
-      $scope.position = $scope.fileIndex[$scope.data_file][(($scope.fileIndex[$scope.data_file].indexOf($scope.position) == 0) ? (0) : ($scope.fileIndex[$scope.data_file].indexOf($scope.position) - 1))];
+      $scope.position = $scope.fileIndex[$scope.data_file][(($scope.fileIndex[$scope.data_file].indexOf($scope.position) === 0) ? (0) : ($scope.fileIndex[$scope.data_file].indexOf($scope.position) - 1))];
       $scope.broadcastPosition();
     };
 
     $scope.nextPosition = function() {
-      $scope.position = $scope.fileIndex[$scope.data_file][(($scope.fileIndex[$scope.data_file].indexOf($scope.position) == ($scope.fileIndex[$scope.data_file].length - 1)) ? ($scope.fileIndex[$scope.data_file].indexOf($scope.position)) : ($scope.fileIndex[$scope.data_file].indexOf($scope.position) + 1))];
+      $scope.position = $scope.fileIndex[$scope.data_file][(($scope.fileIndex[$scope.data_file].indexOf($scope.position) === ($scope.fileIndex[$scope.data_file].length - 1)) ? ($scope.fileIndex[$scope.data_file].indexOf($scope.position)) : ($scope.fileIndex[$scope.data_file].indexOf($scope.position) + 1))];
       $scope.broadcastPosition();
     };
 
     $(document).keydown(function(e) {
-        if(e.which == 37)
+        if(e.which === 37)
             $scope.previousPosition();
-        else if(e.which == 39)
+        else if(e.which === 39)
             $scope.nextPosition();
     });
 
@@ -173,9 +173,9 @@ mycelysoApp.controller('mycelysoResultGrid', function($scope, $http, $rootScope)
     $scope.remarks = '';
 
     $scope.store = function() {
-        if($scope.url == '')
+        if($scope.url === '')
             return;
-        if($scope.remarks != '') {
+        if($scope.remarks !== '') {
             $scope.remark_array[$scope.url] = {
                 filename: $scope.results.filename,
                 position: $scope.results.meta_pos,
@@ -221,6 +221,7 @@ mycelysoApp.controller('mycelysoResultGrid', function($scope, $http, $rootScope)
             $scope.grid.data = [];
 
             for(var n in $scope.results) {
+                //noinspection JSUnfilteredForInLoop
                 $scope.grid.data.push({
                     "Key": beautify(n),
                     "Value": $scope.results[n]
@@ -318,7 +319,7 @@ mycelysoApp.controller('mycelysoPlotlist', function($scope, $http, $rootScope, $
     $rootScope.$on('selectTrackPlot', function(event, plotNum) {
         for(var i = 0; i < $scope.plots.length; i++) {
             var thisNum = Number($scope.plots[i][0].split(' ')[1]);
-            if(plotNum == thisNum) {
+            if(plotNum === thisNum) {
                 $scope.plotIndex = i;
                 $scope.showPlot();
                 break;
@@ -369,7 +370,7 @@ mycelysoApp.controller('mycelysoGraph', function($scope, $http, $rootScope, $q) 
                         continue; //strange?
                     var graphData = responses[i].data[track[i].graph];
 
-                    var target = $('<div/>', { id: 'graph' + i  }).appendTo('#graphContainer');
+                    var target = $('<div></div>', { id: 'graph' + i  }).appendTo('#graphContainer');
 
                     var cy = cytoscape({
                         container: target,
@@ -618,7 +619,7 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $doc
                     map: new THREE.Texture(),
                     transparent: true,
                     side: THREE.DoubleSide,
-                    alphaTest: 0.5,
+                    alphaTest: 0.5
                 });
 
                 loader.load(url, function (img) {
@@ -663,10 +664,10 @@ mycelysoApp.controller('mycelyso3DVis', function($scope, $http, $rootScope, $doc
 
 
             $document.on('keypress', function(eventData) {
-                if(eventData.key == 'h') {
+                if(eventData.key === 'h') {
                     showImages = !showImages;
                     $scope.slide();
-                } else if(eventData.key == 'l') {
+                } else if(eventData.key === 'l') {
                     showEdgeLabels = !showEdgeLabels;
                     mathbox.select('#edgeLabelsLabels').set({visible: showEdgeLabels});
                 }
