@@ -11,6 +11,7 @@ import webbrowser
 
 import numpy as np
 
+from . import BANNER
 from pandas import HDFStore
 from networkx import GraphMLReader
 import png
@@ -563,6 +564,8 @@ def get_tracking():
 
 
 def main():
+    print(BANNER)
+
     app = Flask(__name__)
     app.register_blueprint(bp)
 
