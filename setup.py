@@ -16,6 +16,14 @@ def get_all_files(path):
             result.append(os.path.join(root, file))
     return result
 
+ADDITIONAL_STATIC_FILES = get_all_files('mycelyso_inspector/static')
+
+if len([filename for filename in ADDITIONAL_STATIC_FILES if '/bower_components/' in filename]) == 0:
+    print("This package needs various bower (a JavaScript/web dependency manager) packages to work properly.")
+    print("They were not found. Please run `bower install` in mycelyso_inspector/static before packaging.")
+    print()
+    raise SystemExit
+
 setup(
     name='mycelyso_inspector',
     version='0.0.1',
@@ -27,7 +35,7 @@ setup(
     packages=find_packages(),
     install_requires=['numpy', 'scipy', 'matplotlib', 'mpld3', 'pandas', 'flask', 'networkx', 'purepng'],
     package_data={
-        'mycelyso_inspector': get_all_files('mycelyso_inspector/static')
+        'mycelyso_inspector': ADDITIONAL_STATIC_FILES
     },
     license='BSD',
     classifiers=[
