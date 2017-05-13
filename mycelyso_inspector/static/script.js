@@ -146,6 +146,34 @@ mycelysoApp.controller('mycelysoUrlAndIntervalController', function ($scope, $ht
 });
 
 
+mycelysoApp.filter('advancedNumber', function() {
+    return function(input, decimals) {
+        if(input === null) {
+            return '';
+        }
+        if(!isFinite(input)) {
+            return '' + input; // could be formatted differently eg. with math symbols
+        }
+        if(parseFloat(input)!==parseFloat(input)) {
+            return '' + input;
+        }
+        var powed = Math.pow(10.0, decimals);
+        var comparator = 1.0 / powed;
+        if((input > 0 && input < comparator) || (input < 0 && input > -comparator)) {
+            // scientific notation
+            return input.toExponential(decimals);
+        } else {
+            if(input === Math.round(input)) {
+                // integer
+                return '' + input;
+            } else {
+                return input.toFixed(decimals);
+            }
+        }
+    };
+});
+
+
 mycelysoApp.controller('mycelysoResultGrid', function ($scope, $http, $rootScope) {
 
     $scope.prettifyFilename = function (name) {
@@ -162,7 +190,7 @@ mycelysoApp.controller('mycelysoResultGrid', function ($scope, $http, $rootScope
         data: [],
         columnDefs: [
             {name: "Key", width: 500},
-            {name: "Value", width: 200}
+            {name: "Value", width: 200, cellFilter: 'advancedNumber: 4'}
         ]
     };
 
@@ -271,6 +299,7 @@ mycelysoApp.controller('mycelysoTrackingGrid', function ($scope, $http, $rootSco
                 return {
                     name: name,
                     width: 400,
+                    cellFilter: 'advancedNumber: 4',
                     filters: [
                         {
                             condition: uiGridConstants.filter.GREATER_THAN,
