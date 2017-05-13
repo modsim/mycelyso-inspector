@@ -79,7 +79,7 @@
                 <span class="icon-bar"></span>
             </button>
             <a class="navbar-brand" href="#"><img src="mycelyso.svg" style="height: 1.0em; display: inline;"
-                                                  alt="mycelyso"/> Inspector</a>
+                                                  alt="mycelyso "/>Inspector</a>
         </div>
 
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1"
@@ -122,7 +122,7 @@
 
             </ul>
             <ul class="nav navbar-nav navbar-right">
-                <!--<li><a href="#">About</a></li> -->
+                <li><a href="#" onclick="$('#about').toggle();">About</a></li>
             </ul>
         </div><!-- /.navbar-collapse -->
     </div><!-- /.container-fluid -->
@@ -130,6 +130,15 @@
 
 
 <div class="container-fluid">
+    <div class="jumbotron" id="about" style="display: none;">
+        <h1><img src="mycelyso.svg" style="height: 1.0em; display: inline;" alt="mycelyso "/>Inspector</h1>
+        <h2>About</h2>
+        <p>MYCElium anaLYsis SOftware &mdash; Inspector</p>
+        <p>Developed  2015&ndash;2017 by <a href="https://github.com/csachs">Christian C. Sachs</a> at <a href="https://github.com/modsim">Modeling &amp; Simulation Group</a> at <a href="https://www.fz-juelich.de/">Research  Center  Juelich</a>.<br/>
+            Visit <a href="https://github.com/modsim/mycelyso">mycelyso</a> at github for more information.<br />
+            Licensed under the BSD License. Using various open source libraries under their respective licenses.
+        </p>
+    </div>
     <div class="row">
         <div class="col-md-2 sidebar">
             <h4>Plots:</h4>
@@ -176,22 +185,32 @@
          ui-grid-exporter style=""></div>
 </div>
 
-<div ng-controller="mycelysoGraph">
-    <button type="button" class="btn btn-default" ng-click="getGraphsForTrack()">Get Graphs for selected track Row
-    </button>
-    <div id="graphContainer"></div>
+<div style="padding: 10px;">
+    <ul class="nav nav-tabs nav-tabs-justified">
+        <li class="active"><a data-toggle="tab" href="#3dvis">3D Visualization</a></li>
+        <li><a data-toggle="tab" href="#2dvis">2D Tracking Visualization</a></li>
+    </ul>
+
+    <div class="tab-content" style="padding: 10px;">
+        <div id="3dvis" class="tab-pane fade in active">
+            <div ng-controller="mycelyso3DVis">
+                <button type="button" class="btn btn-default" ng-click="vis()">Load 3D Visualization</button><br />
+                Selected visible time frame:
+                <div ui-slider="timeSliderOptions" tick min="0" max="{{maxTime}}" step="1" ng-model="timeSlider"></div>
+                Loading might take a while. Use <code>h</code> and <code>l</code> to hide binarization/labels.
+                <br/><br />
+                <div id="visualizationContainer"></div>
+            </div>
+
+        </div>
+        <div id="2dvis" class="tab-pane fade">
+            <div ng-controller="mycelysoGraph">
+                <button type="button" class="btn btn-default" ng-click="getGraphsForTrack()">Get Graphs for Selected Track Row</button>
+                <div id="graphContainer"></div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<div ng-controller="mycelyso3DVis">
-
-    <br/>
-    <button type="button" class="btn btn-default" ng-click="vis()">Visualize</button>
-    Visible time:
-    <div ui-slider="timeSliderOptions" tick min="0" max="{{maxTime}}" step="1" ng-model="timeSlider"></div>
-    <br/>
-    <div id="visualizationContainer"></div>
-</div>
-
 
 <div style="height: 500px;">
     &nbsp;
@@ -210,8 +229,5 @@
                 ng-src="{{url}}/collage_{{what}}_every_{{n}}.png" id="longPreview" src="" style="height: 150px;"/></a>
     </div>
 </footer>
-<div class="jumbotron" id="about" style="display: none;">
-    <h1>About</h1>
-</div>
 </body>
 </html>
