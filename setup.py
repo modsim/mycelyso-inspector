@@ -20,16 +20,12 @@ setup(
     name='mycelyso_inspector',
     version='0.0.1',
     description='MYCElium anaLYsis SOftware - Inspector',
-    long_description='',
+    long_description='see https://github.com/modsim/mycelyso',
     author='Christian C. Sachs',
     author_email='c.sachs@fz-juelich.de',
     url='https://github.com/modsim/mycelyso',
-    packages=['mycelyso_inspector'],
-    #scripts=[''],
+    packages=find_packages(),
     install_requires=['numpy', 'scipy', 'matplotlib', 'mpld3', 'pandas', 'flask', 'networkx', 'purepng'],
-    # extras_require={
-    #     'feature': ['package'],
-    # },
     package_data={
         'mycelyso_inspector': get_all_files('mycelyso_inspector/static')
     },
