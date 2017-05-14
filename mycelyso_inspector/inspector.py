@@ -90,6 +90,7 @@ def get_files():
     return jsonify(files=list(h5_files.keys()))
 
 
+# noinspection PyUnusedLocal
 @bp.url_value_preprocessor
 def open_file_if_present(endpoint, values):
     if 'file_name' in values:
@@ -106,6 +107,7 @@ def open_file_if_present(endpoint, values):
         g.h5h = g.h._handle
 
 
+# noinspection PyUnusedLocal
 @bp.url_value_preprocessor
 def parse_h5_path_if_present(endpoint, values):
     if 'original_name' in values and 'position_name' in values:
@@ -268,16 +270,23 @@ um_per_s_to_um_per_h = 60.0 * 60.0
 
 
 class Plots(object):
+    @classmethod
+    def _set_time_limits(cls, axis):
+        timepoints = np.array(g.RTC.timepoint) * seconds_to_hours
+        axis.set_xlim(timepoints.min(), timepoints.max())
 
-    @staticmethod
-    def tracked_segments(fig):
-        pyplot.title('Tracked Segments')
-        pyplot.xlabel('Time [h]')
-        pyplot.ylabel('Elongation rate [µm∙h⁻¹]')
-        # pyplot.plot(g.RTC.timepoint * seconds_to_hours, g.RTC.covered_area)
-        pyplot.hlines(g.TT.plain_regression_slope * um_per_s_to_um_per_h,
-                      xmin=g.TT.timepoint_begin * seconds_to_hours,
-                      xmax=g.TT.timepoint_end * seconds_to_hours)
+    @classmethod
+    def tracked_segments(cls, fig):
+        axis = fig.gca()
+        axis.set_title('Tracked Segments')
+        axis.set_xlabel('Time [h]')
+        axis.set_ylabel('Elongation rate [µm∙h⁻¹]')
+
+        axis.hlines(g.TT.plain_regression_slope * um_per_s_to_um_per_h,
+                    xmin=g.TT.timepoint_begin * seconds_to_hours,
+                    xmax=g.TT.timepoint_end * seconds_to_hours)
+
+        cls._set_time_limits(axis)
 
         return (
                    range(len(g.TT)),
@@ -286,14 +295,70 @@ class Plots(object):
                    g.TT.timepoint_end * seconds_to_hours
                ), ("num", "um_per_hour", "timepoint_start", "timepoint_end")
 
+    @classmethod
+    def tracked_hyphae(cls, fig):
+        return cls._tracked_hyphae(fig, False)
+
+    @classmethod
+    def tracked_hyphae_absolute(cls, fig):
+        return cls._tracked_hyphae(fig, True)
+
+    @classmethod
+    def _tracked_hyphae(cls, fig, absolute=True):
+        mapping = g.h[
+            h5_join(g.h5_path, 'tables', '_mapping_track_table_aux_tables', 'track_table_aux_tables_000000000')]
+        numbers = [int(row.individual_table) for _, row in mapping.iterrows()]
+
+        pad_zeros = len('000000001')
+
+        axis = fig.gca()
+
+        axis.set_title('Tracked Hyphae')
+
+        axis.set_xlabel('Time [h]')
+        axis.set_ylabel('Distance [µm]')
+
+        header = ("track_number", "time", "length",)
+
+        data_numbers = []
+        data_timepoints = []
+        data_distance = []
+
+        for number in numbers:
+            table = g.h[h5_join(g.h5_path, 'tables', '_individual_track_table_aux_tables',
+                                'track_table_aux_tables_' + (('%0' + str(pad_zeros) + 'd') % (number,)))]
+
+            timepoints = table.timepoint * seconds_to_hours
+            distance = np.array(table.distance)
+
+            if not absolute:
+                distance -= distance.min()
+
+            axis.plot(timepoints, distance, marker='.')
+
+            data_numbers.append([number] * len(table))
+            data_timepoints.append(timepoints)
+            data_distance.append(distance)
+
+        cls._set_time_limits(axis)
+
+        data = [
+            np.concatenate(data_numbers),
+            np.concatenate(data_timepoints),
+            np.concatenate(data_distance)
+        ]
+
+        return data, header
+
     @staticmethod
     def covered_area(fig):
         x, y = g.RTC.timepoint * seconds_to_hours, g.RTC.covered_area
 
-        pyplot.title('Covered Area')
-        pyplot.xlabel('Time [h]')
-        pyplot.ylabel('Covered area [µm²]')
-        pyplot.plot(x, y)
+        axis = fig.gca()
+        axis.set_title('Covered Area')
+        axis.set_xlabel('Time [h]')
+        axis.set_ylabel('Covered area [µm²]')
+        axis.plot(x, y)
 
         return (x, y), ("time", "area",)
 
@@ -301,10 +366,11 @@ class Plots(object):
     def graph_edge_length(fig):
         x, y = g.RTC.timepoint * seconds_to_hours, g.RTC.graph_edge_length
 
-        pyplot.title('Edge Length of Graph')
-        pyplot.xlabel('Time [h]')
-        pyplot.ylabel('Edge length [µm]')
-        pyplot.plot(x, y)
+        axis = fig.gca()
+        axis.set_title('Edge Length of Graph')
+        axis.set_xlabel('Time [h]')
+        axis.set_ylabel('Edge length [µm]')
+        axis.plot(x, y)
 
         return (x, y), ("time", "edge_length",)
 
@@ -312,24 +378,27 @@ class Plots(object):
     def graph_node_count(fig):
         x, y = g.RTC.timepoint * seconds_to_hours, g.RTC.graph_node_count
 
-        pyplot.title('Node Count of Graph')
-        pyplot.xlabel('Time [h]')
-        pyplot.ylabel('Node count [#]')
-        pyplot.plot(x, y)
+        axis = fig.gca()
+        axis.set_title('Node Count of Graph')
+        axis.set_xlabel('Time [h]')
+        axis.set_ylabel('Node count [#]')
+        axis.plot(x, y)
 
         return (x, y,), ("time", "node_count",)
 
     @staticmethod
     def graph_hyphal_growth_unit(fig):
-        pyplot.title('Hyphal Growth Unit (Total Length/Tips)')
-        pyplot.xlabel('Time [h]')
-        pyplot.ylabel('µm')
+        axis = fig.gca()
+        axis.set_title('Hyphal Growth Unit (Total Length/Tips)')
+        axis.set_xlabel('Time [h]')
+        axis.set_ylabel('µm')
+
         x = np.array(g.RTC.timepoint) * seconds_to_hours
         y = np.array(g.RTC.graph_edge_length) / np.array(g.RTC.graph_endpoint_count)
 
         x = x[np.isfinite(y)]
         y = y[np.isfinite(y)]
-        pyplot.plot(x, y)
+        axis.plot(x, y)
         
         return (x, y,), ("time", "um",)
 
@@ -342,6 +411,18 @@ def prepare_tsv(data, header):
                "\n" +
                "\n".join(["\t".join(num2str(value) for value in row) for row in data])
     )
+
+
+class Mpld3FigureWrapper(object):
+    def __init__(self):
+        self.figure = pyplot.figure()
+
+    def finish_and_return(self):
+        result = mpld3.fig_to_dict(self.figure)
+
+        pyplot.close('all')
+
+        return result
 
 
 @bp.route(POSITION_PREFIX + 'plots/<plot_name>.<ext>')
@@ -361,13 +442,11 @@ def get_plot(plot_name, ext):
     if to_call is None:
         abort(404)
 
-    fig = pyplot.figure()
+    fig_env = Mpld3FigureWrapper()
 
-    data, header = to_call(fig)
+    data, header = to_call(fig_env.figure)
 
-    result = mpld3.fig_to_dict(fig)
-
-    pyplot.close('all')
+    result = fig_env.finish_and_return()
 
     if ext == 'json':
         return jsonify(result)
@@ -397,16 +476,18 @@ def get_track_plot(number, ext):
     table = g.h[h5_join(g.h5_path, 'tables', '_individual_track_table_aux_tables',
                         'track_table_aux_tables_' + (('%0' + str(pad_zeros) + 'd') % (tables[number],)))]
 
-    fig = pyplot.figure()
-    pyplot.title('Track #%d' % (number,))
-    pyplot.xlabel('time [h]')
-    pyplot.ylabel('distance [µm]')
-    pyplot.plot(table.timepoint * seconds_to_hours, table.distance, marker='.')
+    fig_env = Mpld3FigureWrapper()
+
+    axis = fig_env.figure.gca()
+    axis.set_title('Track #%d' % (number,))
+    axis.set_xlabel('Time [h]')
+    axis.set_ylabel('Distance [µm]')
+    axis.plot(table.timepoint * seconds_to_hours, table.distance, marker='.')
 
     data = (table.timepoint * seconds_to_hours, table.distance,)
     header = ("time", "length",)
 
-    result = mpld3.fig_to_dict(fig)
+    result = fig_env.finish_and_return()
 
     pyplot.close('all')
 
@@ -595,6 +676,7 @@ def main():
         def _inject_start_time():
             g.start_time = time.time()
 
+        # noinspection PyUnusedLocal
         @app.teardown_request
         def _print_elapsed_time(response):
             delta = time.time() - g.start_time
