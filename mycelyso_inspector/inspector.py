@@ -189,7 +189,10 @@ def original_snapshot():
 def inject_tables():
     g.RT = g.h[h5_join(g.h5_path, 'result_table')]
     g.RTC = g.h[h5_join(g.h5_path, 'result_table_collected')]
-    g.TT = g.h[h5_join(g.h5_path, 'tables', 'track_table', 'track_table_000000000')]
+    try:
+        g.TT = g.h[h5_join(g.h5_path, 'tables', 'track_table', 'track_table_000000000')]
+    except KeyError:
+        g.TT = None
 
 
 def dataframe_to_json_safe_array_of_dicts(df):
@@ -363,6 +366,18 @@ class Plots(object):
         return (x, y), ("time", "area",)
 
     @staticmethod
+    def covered_area_relative(fig):
+        x, y = g.RTC.timepoint * seconds_to_hours, g.RTC.covered_ratio
+
+        axis = fig.gca()
+        axis.set_title('Covered Area')
+        axis.set_xlabel('Time [h]')
+        axis.set_ylabel('Covered area [ratio]')
+        axis.plot(x, y)
+
+        return (x, y), ("time", "area_ratio",)
+
+    @staticmethod
     def graph_edge_length(fig):
         x, y = g.RTC.timepoint * seconds_to_hours, g.RTC.graph_edge_length
 
@@ -460,6 +475,8 @@ def get_plot(plot_name, ext):
 def get_track_plot(number, ext):
 
     inject_tables()
+    if g.TT is None:
+        return jsonify(plots=[])
     mapping = g.h[h5_join(g.h5_path, 'tables', '_mapping_track_table_aux_tables', 'track_table_aux_tables_000000000')]
     tables = {int(index_): int(row.individual_table) for index_, row in mapping.iterrows()}
 
