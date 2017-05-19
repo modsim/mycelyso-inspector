@@ -7,6 +7,7 @@ import sys
 import os
 import glob
 import time
+import json
 import webbrowser
 
 import numpy as np
@@ -17,7 +18,7 @@ from networkx import GraphMLReader
 import png
 from io import BytesIO
 
-from flask import Flask, Blueprint, redirect, jsonify, abort, g, send_file, Response, url_for
+from flask import Flask, Blueprint, redirect, jsonify, abort, g, send_file, Response, url_for, current_app
 from argparse import ArgumentParser
 
 try:
@@ -28,6 +29,7 @@ except ImportError:
     image_source = Meta = rescale_image_to_uint8 = TiffImageStack = ImageStack = Dimensions = None
 
 import matplotlib
+
 matplotlib.use('Agg')
 # noinspection PyPep8
 from matplotlib import pyplot
@@ -48,6 +50,7 @@ bp = Blueprint('inspector', __name__)
 
 def h5_join(*args):
     return '/'.join(args)
+
 
 h5_base_node = '/results'
 
@@ -167,7 +170,7 @@ def original_snapshot():
     timepoints = ims.sizes[0]
 
     images = [rescale_image_to_uint8(ims[i]).astype(np.float32)
-              for i in range(0, timepoints, timepoints//images_in_collage)]
+              for i in range(0, timepoints, timepoints // images_in_collage)]
     images = [i[::images_subsampling, ::images_subsampling] for i in images]
 
     if perform_non_linear_adaption:
@@ -180,7 +183,7 @@ def original_snapshot():
             im -= im.min()
             im /= im.max()
 
-    images = [(im*255).astype(np.uint8) for im in images]
+    images = [(im * 255).astype(np.uint8) for im in images]
     image = np.concatenate(images, axis=1)
 
     return Response(to_png(image), mimetype='image/png')
@@ -242,8 +245,8 @@ def get_image_nodes_by_path(*args):
 
 def get_images_by_request_and_path(n=1, *args):
     return np.concatenate([
-                np.array(i) for i in get_image_nodes_by_path(*args)[::n]
-            ], axis=1).astype(np.uint8)
+        np.array(i) for i in get_image_nodes_by_path(*args)[::n]
+    ], axis=1).astype(np.uint8)
 
 
 @bp.route(POSITION_PREFIX + 'collage_skeleton_every_<int:n>.png')
@@ -268,7 +271,7 @@ def get_binary(num=0):
     return Response(to_png(img), mimetype='image/png')
 
 
-seconds_to_hours = (1 / (60.0*60.0))
+seconds_to_hours = (1 / (60.0 * 60.0))
 um_per_s_to_um_per_h = 60.0 * 60.0
 
 
@@ -414,7 +417,7 @@ class Plots(object):
         x = x[np.isfinite(y)]
         y = y[np.isfinite(y)]
         axis.plot(x, y)
-        
+
         return (x, y,), ("time", "um",)
 
 
@@ -422,9 +425,9 @@ def prepare_tsv(data, header):
     if not isinstance(data, np.ndarray):
         data = zip(*data)
     return (
-               "\t".join(header) +
-               "\n" +
-               "\n".join(["\t".join(num2str(value) for value in row) for row in data])
+        "\t".join(header) +
+        "\n" +
+        "\n".join(["\t".join(num2str(value) for value in row) for row in data])
     )
 
 
@@ -442,7 +445,6 @@ class Mpld3FigureWrapper(object):
 
 @bp.route(POSITION_PREFIX + 'plots/<plot_name>.<ext>')
 def get_plot(plot_name, ext):
-
     if ext == 'json' and plot_name == 'index':
         return jsonify(plots=[
             [" ".join([x.capitalize() for x in name.split('_')]), "plots/%s.json" % (name,)]
@@ -473,7 +475,6 @@ def get_plot(plot_name, ext):
 
 @bp.route(POSITION_PREFIX + 'track_plots/<number>.<ext>')
 def get_track_plot(number, ext):
-
     inject_tables()
     if g.TT is None:
         return jsonify(plots=[])
@@ -540,16 +541,21 @@ def prepare_cytoscape_json(graph, calibration=1.0):
         ],
         "edges":
             list({
-                     (min(int(node_a_id), int(node_b_id)), max(int(node_a_id), int(node_b_id))):
-                     {"data": {
-                         "source": int(node_a_id),
-                         "target": int(node_b_id),
-                         "weight": calibration*float(attr['weight'])
-                     }}
+                     (min(int(node_a_id), int(node_b_id)), max(int(node_a_id), int(node_b_id))): {
+                         "data": {
+                             "source": int(node_a_id),
+                             "target": int(node_b_id),
+                             "weight": calibration * float(attr['weight'])
+                         }
+                     }
                      for node_a_id, more in graph.edge.items()
                      for node_b_id, attr in more.items() if node_a_id != node_b_id
                  }.values())
     }
+
+
+def get_graph_count():
+    return len(g.h5h.list_nodes(where=g.h5h.get_node(h5_join(g.h5_path, 'data', 'graphml', ))))
 
 
 @bp.route(POSITION_PREFIX + 'graphs/<number>.<ext>')
@@ -561,11 +567,10 @@ def get_graph(number, ext):
         return Response(get_graphml_for_number(number), mimetype='application/xml')
     elif ext == 'json':
         if number == 'all':
-            count = len(g.h5h.list_nodes(where=g.h5h.get_node(h5_join(g.h5_path, 'data', 'graphml', ))))
             return jsonify({
                 int(number): prepare_cytoscape_json(get_graph_for_number(number), calibration=calibration)
-                for number in range(count)
-                })
+                for number in range(get_graph_count())
+            })
         else:
             return jsonify({
                 int(number): prepare_cytoscape_json(get_graph_for_number(number), calibration=calibration)
@@ -611,7 +616,7 @@ def get_visualization():
                 dict(a=int(node_a_id), b=int(node_b_id), weight=calibration * float(attr['weight']))
             for node_a_id, more in graph.edge.items()
             for node_b_id, attr in more.items() if node_a_id != node_b_id
-            }
+        }
 
         edges = []
         edge_labels = []
@@ -631,7 +636,6 @@ def get_visualization():
 
 @bp.route(POSITION_PREFIX + 'tracks/<number>.json')
 def get_track(number):
-
     inject_tables()
     mapping = g.h[h5_join(g.h5_path, 'tables', '_mapping_track_table_aux_tables', 'track_table_aux_tables_000000000')]
     tables = {int(index_): int(row.individual_table) for index_, row in mapping.iterrows()}
@@ -659,6 +663,61 @@ def get_track(number):
 def get_tracking():
     inject_tables()
     return jsonify(results=dataframe_to_json_safe_array_of_dicts(g.TT))
+
+
+def dejsonify(response):
+    return json.loads("".join(response.response))
+
+
+@bp.route(POSITION_PREFIX + 'urls.json')
+def get_defined_urls():
+    urls = []
+    for mapping in current_app.url_map.iter_rules():
+        url = str(mapping)
+        if url.startswith(POSITION_PREFIX):
+            url = url[len(POSITION_PREFIX):]
+            max_every = 100
+            timepoints = len(get_image_nodes_by_path('images', 'binary'))
+
+            if '<' in url or '>' in url:
+                # ugly way of doing this
+                if url.startswith('track_plots/'):
+                    urls.append('track_plots/index.json')
+                    for _, urllet in dejsonify(get_track_plot('index', 'json'))['plots']:
+                        urls.append(urllet)
+                        urls.append(urllet.replace('.json', '.tsv'))
+                elif url.startswith('graphs/'):
+                    urls.append('graphs/all.json')
+                    for n in range(get_graph_count()):
+                        urls.append('graphs/%d.json' % (n,))
+                        urls.append('graphs/%d.xml' % (n,))
+                elif url.startswith('plots/'):
+                    urls.append('plots/index.json')
+                    for _, urllet in dejsonify(get_plot('index', 'json'))['plots']:
+                        urls.append(urllet)
+                        urls.append(urllet.replace('.json', '.tsv'))
+                elif url.startswith('collage_skeleton_every_'):
+                    for n in range(0, max_every + 1):
+                        urls.append(url.replace('<int:n>', str(n)))
+                elif url.startswith('collage_binary_every_'):
+                    for n in range(0, max_every + 1):
+                        urls.append(url.replace('<int:n>', str(n)))
+                elif url.startswith('skeleton_'):
+                    for n in range(0, timepoints):
+                        urls.append(url.replace('<int:num>', str(n)))
+                elif url.startswith('binary_'):
+                    for n in range(0, timepoints):
+                        urls.append(url.replace('<int:num>', str(n)))
+                elif url.startswith('tracks/'):
+                    for n in dejsonify(get_track('index'))['tracks']:
+                        urls.append(url.replace('<number>', str(n)))
+            else:
+                urls.append(url)
+        else:
+            # a static url
+            pass
+
+    return jsonify(urls=urls)
 
 
 def main():
