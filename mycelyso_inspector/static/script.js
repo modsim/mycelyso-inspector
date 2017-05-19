@@ -31,12 +31,15 @@ function MycelysoPersistence(backend) {
 
 var storage = new MycelysoPersistence(window.localStorage ? window.localStorage : {});
 
-var PREFIX = '';
+var PREFIX = '..';
 
 function make_url() {
     var arr = [];
-    for (var i = 0; i < arguments.length; i++)
-        arr.push(arguments[i]);
+    for (var i = 0; i < arguments.length; i++) {
+        if(arguments[i] != '') {
+            arr.push(arguments[i]);
+        }
+    }
 
     return arr.join('/');
 }
@@ -688,7 +691,7 @@ mycelysoApp.controller('mycelyso3DVis', function ($scope, $http, $rootScope, $do
                 var imagesToRender = response_data.images.binary;
 
                 for (var i in imagesToRender) {
-                    var imgUrl = imagesToRender[i];
+                    var imgUrl = make_url(PREFIX, imagesToRender[i]);
                     var mesh = addPlane(i, imgUrl);
                     three.scene.add(mesh);
                     imageMeshes.push(mesh);

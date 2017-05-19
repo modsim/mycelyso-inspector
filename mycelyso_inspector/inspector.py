@@ -697,10 +697,10 @@ def get_defined_urls():
                         urls.append(urllet)
                         urls.append(urllet.replace('.json', '.tsv'))
                 elif url.startswith('collage_skeleton_every_'):
-                    for n in range(0, max_every + 1):
+                    for n in range(1, max_every + 1):
                         urls.append(url.replace('<int:n>', str(n)))
                 elif url.startswith('collage_binary_every_'):
-                    for n in range(0, max_every + 1):
+                    for n in range(1, max_every + 1):
                         urls.append(url.replace('<int:n>', str(n)))
                 elif url.startswith('skeleton_'):
                     for n in range(0, timepoints):
@@ -716,6 +716,24 @@ def get_defined_urls():
         else:
             # a static url
             pass
+
+    return jsonify(urls=urls)
+
+
+@bp.route('/static-urls.json')
+def get_static_urls():
+    the_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'static'))
+
+    urls = []
+
+    for path_name in glob.glob('%s/**' % (the_dir,), recursive=True):
+        if os.path.isdir(path_name):
+            continue
+        path_name = path_name.replace(the_dir, '')
+
+        urls.append('/static' + path_name)
+
+    urls.append('/mpld3.js')
 
     return jsonify(urls=urls)
 
