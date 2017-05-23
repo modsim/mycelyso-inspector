@@ -25,7 +25,7 @@ if len([filename for filename in ADDITIONAL_STATIC_FILES if '/bower_components/'
     raise SystemExit
 
 setup(
-    name='mycelyso_inspector',
+    name='mycelyso-inspector',
     version='0.0.1rc1',
     description='MYCElium anaLYsis SOftware - Inspector',
     long_description='see https://github.com/modsim/mycelyso',
