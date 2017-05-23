@@ -12,7 +12,7 @@ import webbrowser
 
 import numpy as np
 
-from . import BANNER
+from . import __banner__
 from pandas import HDFStore
 from networkx import GraphMLReader
 import png
@@ -739,7 +739,7 @@ def get_static_urls():
 
 
 def main():
-    print(BANNER)
+    print(__banner__)
 
     app = Flask(__name__)
     app.register_blueprint(bp)
