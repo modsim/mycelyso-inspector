@@ -754,7 +754,7 @@ def main():
     argparser.error = _error
 
     argparser.add_argument('-p', '--port', dest='port', type=int, default=5000)
-    argparser.add_argument('-b', '--bind', dest='host', type=str, default='0.0.0.0')
+    argparser.add_argument('-b', '--bind', dest='host', type=str, default='127.0.0.1')
     argparser.add_argument('-P', '--processes', dest='processes', type=int, default=8)
     argparser.add_argument('-d', '--debug', dest='debug', default=False, action='store_true')
     argparser.add_argument('-nb', '--no-browser', dest='browser', default=True, action='store_false')
