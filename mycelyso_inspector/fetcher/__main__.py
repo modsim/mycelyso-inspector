@@ -5,7 +5,7 @@ import random
 import urllib.request
 
 from argparse import ArgumentParser
-from .. import BANNER
+from .. import __banner__
 
 try:
     import tqdm
@@ -34,7 +34,7 @@ def get_json(url):
 
 
 def main():
-    print(BANNER)
+    print(__banner__)
 
     argparser = ArgumentParser(description="mycelyso Inspector Fetcher")
 
