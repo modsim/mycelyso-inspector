@@ -579,6 +579,12 @@ def get_graph(number, ext):
         abort(404)
 
 
+def strip_beginning_slash(s):
+    if s[0:1] == '/':
+        s = s[1:]
+    return s
+
+
 @bp.route(POSITION_PREFIX + 'visualization/complete.json')
 def get_visualization():
     inject_tables()
@@ -597,10 +603,10 @@ def get_visualization():
         'graphs': {},
         'images': {
             'binary': {
-                n: url_for(get_binary, num=n, **value_kwargs) for n in range(len(graphs))
+                n: strip_beginning_slash(url_for(get_binary, num=n, **value_kwargs)) for n in range(len(graphs))
             },
             'skeleton': {
-                n: url_for(get_skeleton, num=n, **value_kwargs) for n in range(len(graphs))
+                n: strip_beginning_slash(url_for(get_skeleton, num=n, **value_kwargs)) for n in range(len(graphs))
             }
         }
     }
