@@ -1,0 +1,3 @@
+graft mycelyso_inspector/static
+recursive-exclude mycelyso_inspector/static node_modules less mathbox/vendor mathbox/release cytoscape/benchmark cytoscape/snippets
+prune mycelyso_inspector/static/bower_components/mathbox/vendor

@@ -6,7 +6,7 @@ Last commit before submission was 88d5976548478541e3b3bdb028304e123a74c70f
 
 A bug was found, which made packages incompatible with most Windows systems.
 
-As of 2017-05-31, a new wheel has been pushed to PyPI. (mycelyso_inspector-0.0.1rc3-py3-none-any.whl)
+As of 2017-05-31, a new wheel has been pushed to PyPI. (mycelyso_inspector-0.0.1rc4-py3-none-any.whl)
 
 Furthermore, due to purepng dependency, it is advisable to use Python 3.5 instead of Python 3.6 (as of now).
 
