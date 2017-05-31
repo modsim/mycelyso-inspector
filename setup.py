@@ -24,9 +24,18 @@ if len([filename for filename in ADDITIONAL_STATIC_FILES if '/bower_components/'
     print()
     raise SystemExit
 
+BLACKLIST = [
+    'node_modules', '/less/', 'mathbox/vendor', 'mathbox/release', 'cytoscape/benchmark', 'cytoscape/snippets'
+]
+
+for item in BLACKLIST:
+    ADDITIONAL_STATIC_FILES = [filepath for filepath in ADDITIONAL_STATIC_FILES if item not in filepath]
+
+ADDITIONAL_STATIC_FILES = [filepath for filepath in ADDITIONAL_STATIC_FILES if not os.path.isdir(filepath)]
+
 setup(
     name='mycelyso-inspector',
-    version='0.0.1rc2',
+    version='0.0.1rc3',
     description='MYCElium anaLYsis SOftware - Inspector',
     long_description='see https://github.com/modsim/mycelyso',
     author='Christian C. Sachs',
