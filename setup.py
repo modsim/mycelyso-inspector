@@ -35,7 +35,7 @@ ADDITIONAL_STATIC_FILES = [filepath for filepath in ADDITIONAL_STATIC_FILES if n
 
 setup(
     name='mycelyso-inspector',
-    version='0.0.1rc3',
+    version='0.0.1rc4',
     description='MYCElium anaLYsis SOftware - Inspector',
     long_description='see https://github.com/modsim/mycelyso',
     author='Christian C. Sachs',

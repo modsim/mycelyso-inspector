@@ -767,6 +767,10 @@ def main():
 
     args = argparser.parse_args()
 
+    if os.name == 'nt':
+        print("Running on Windows, only one process will serve, which may slow down interactive usage!")
+        args.processes = 1
+
     if args.debug:
         args.host = '127.0.0.1'
         print("Debug mode enabled, host force-set to %s" % args.host)
