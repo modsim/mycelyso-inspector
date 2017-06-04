@@ -560,6 +560,7 @@ mycelysoApp.controller('mycelyso3DVis', function ($scope, $http, $rootScope, $do
                     data: nodes
                 }).point({
                     color: 'gray',
+                    'id': 'nodePoints',
                     size: 10,
                     zOrder: 2
                 });
@@ -572,6 +573,7 @@ mycelysoApp.controller('mycelyso3DVis', function ($scope, $http, $rootScope, $do
                     data: edges
                 }).vector({
                     color: 'lightgray',
+                    'id': 'edgeVectors',
                     size: 10,
                     zOrder: 1
                 });
@@ -698,6 +700,7 @@ mycelysoApp.controller('mycelyso3DVis', function ($scope, $http, $rootScope, $do
                 }
 
                 var showImages = true;
+                var showGraph = true;
                 var showEdgeLabels = false;
 
 
@@ -705,6 +708,9 @@ mycelysoApp.controller('mycelyso3DVis', function ($scope, $http, $rootScope, $do
                     if (eventData.key === 'h') {
                         showImages = !showImages;
                         $scope.slide();
+                    } else if (eventData.key === 'g') {
+                        showGraph = !showGraph;
+                        mathbox.select('#nodePoints,#edgeVectors').set({visible: showGraph});
                     } else if (eventData.key === 'l') {
                         showEdgeLabels = !showEdgeLabels;
                         mathbox.select('#edgeLabelsLabels').set({visible: showEdgeLabels});
