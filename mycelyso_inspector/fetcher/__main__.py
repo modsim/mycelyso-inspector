@@ -35,7 +35,8 @@ def get_json(url):
     return json.loads(get_file(url).decode())
 
 
-def download_url_to_file(url, file_name):
+def download_url_to_file(url_file_name):
+    url, file_name = url_file_name
     with open(file_name, 'wb+') as fp:
         fp.write(get_file(url))
 
@@ -102,6 +103,8 @@ def main():
 
     for _ in progress(pool.imap_unordered(download_url_to_file, todo_list), total=len(todo_list)):
         pass
+
+    print("Done")
 
 
 if __name__ == '__main__':
