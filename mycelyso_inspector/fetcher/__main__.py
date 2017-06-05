@@ -5,6 +5,7 @@ import random
 import urllib.request
 
 from argparse import ArgumentParser
+from multiprocessing import Pool
 from .. import __banner__
 
 try:
@@ -13,14 +14,15 @@ except ImportError:
     tqdm = None
 
 
-def progress(iterable_):
+def progress(iterable_, total=None):
     if tqdm:
-        for item in tqdm.tqdm(iterable_):
+        for item in tqdm.tqdm(iterable_, total=total):
             yield item
     else:
-        the_length = len(iterable_)
+        if total is None:
+            total = len(iterable_)
         for n, item in enumerate(iterable_):
-            print("\r%d/%d" % (n, the_length), end="\r")
+            print("\r%d/%d" % (n, total), end="\r")
             yield item
 
 
@@ -31,6 +33,11 @@ def get_file(url):
 
 def get_json(url):
     return json.loads(get_file(url).decode())
+
+
+def download_url_to_file(url, file_name):
+    with open(file_name, 'wb+') as fp:
+        fp.write(get_file(url))
 
 
 def main():
@@ -76,6 +83,8 @@ def main():
     # shuffle it so ETA estimations make more sense
     random.shuffle(urls)
 
+    todo_list = []
+
     for url in progress(urls):
         filename = url[1:]
         pathlet = os.path.dirname(filename)
@@ -87,8 +96,12 @@ def main():
         if os.path.isfile(absolute_file) and not args.overwrite:
             raise RuntimeError("Output %s already exists!" % (absolute_file,))
 
-        with open(absolute_file, 'wb+') as fp:
-            fp.write(get_file(args.url + url))
+        todo_list.append((args.url + url, absolute_file))
+
+    pool = Pool()
+
+    for _ in progress(pool.imap_unordered(download_url_to_file, todo_list), total=len(todo_list)):
+        pass
 
 
 if __name__ == '__main__':

@@ -311,8 +311,15 @@ class Plots(object):
 
     @classmethod
     def _tracked_hyphae(cls, fig, absolute=True):
-        mapping = g.h[
-            h5_join(g.h5_path, 'tables', '_mapping_track_table_aux_tables', 'track_table_aux_tables_000000000')]
+        header = ("track_number", "time", "length",)
+
+        try:
+            mapping = g.h[
+                h5_join(g.h5_path, 'tables', '_mapping_track_table_aux_tables', 'track_table_aux_tables_000000000')
+            ]
+        except KeyError:
+            return [], header
+
         numbers = [int(row.individual_table) for _, row in mapping.iterrows()]
 
         pad_zeros = len('000000001')
@@ -323,8 +330,6 @@ class Plots(object):
 
         axis.set_xlabel('Time [h]')
         axis.set_ylabel('Distance [µm]')
-
-        header = ("track_number", "time", "length",)
 
         data_numbers = []
         data_timepoints = []
@@ -643,6 +648,8 @@ def get_visualization():
 @bp.route(POSITION_PREFIX + 'tracks/<number>.json')
 def get_track(number):
     inject_tables()
+    if g.TT is None:
+        return jsonify(results=[])
     mapping = g.h[h5_join(g.h5_path, 'tables', '_mapping_track_table_aux_tables', 'track_table_aux_tables_000000000')]
     tables = {int(index_): int(row.individual_table) for index_, row in mapping.iterrows()}
 
@@ -715,8 +722,11 @@ def get_defined_urls():
                     for n in range(0, timepoints):
                         urls.append(url.replace('<int:num>', str(n)))
                 elif url.startswith('tracks/'):
-                    for n in dejsonify(get_track('index'))['tracks']:
-                        urls.append(url.replace('<number>', str(n)))
+                    try:
+                        for n in dejsonify(get_track('index'))['tracks']:
+                            urls.append(url.replace('<number>', str(n)))
+                    except KeyError:
+                        pass
             else:
                 urls.append(url)
         else:
@@ -783,8 +793,11 @@ def main():
         # noinspection PyUnusedLocal
         @app.teardown_request
         def _print_elapsed_time(response):
-            delta = time.time() - g.start_time
-            print("took %.3fs" % (delta,))
+            try:
+                delta = time.time() - g.start_time
+                print("took %.3fs" % (delta,))
+            except AttributeError:
+                pass
 
         if args.browser:
             webbrowser.open('http://%s:%d/' % (args.host, args.port))
