@@ -757,7 +757,12 @@ def get_static_urls():
 def main():
     print(__banner__)
 
-    app = Flask(__name__)
+    static_folder = 'static'
+
+    if getattr(sys, 'frozen', False):
+        static_folder = os.path.join(sys._MEIPASS, static_folder)
+
+    app = Flask(__name__, static_folder=static_folder)
     app.register_blueprint(bp)
 
     argparser = ArgumentParser(description="mycelyso Inspector")
