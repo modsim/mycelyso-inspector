@@ -22,7 +22,8 @@ if len([filename for filename in ADDITIONAL_STATIC_FILES if '/bower_components/'
     print("This package needs various bower (a JavaScript/web dependency manager) packages to work properly.")
     print("They were not found. Please run `bower install` in mycelyso_inspector/static before packaging.")
     print()
-    raise SystemExit
+    if not ('SKIP_BOWER_CHECK' in os.environ and os.environ['SKIP_BOWER_CHECK'] == '1'):
+        raise SystemExit
 
 BLACKLIST = [
     'node_modules', '/less/', 'mathbox/vendor', 'mathbox/release', 'cytoscape/benchmark', 'cytoscape/snippets'
@@ -35,7 +36,7 @@ ADDITIONAL_STATIC_FILES = [filepath for filepath in ADDITIONAL_STATIC_FILES if n
 
 setup(
     name='mycelyso-inspector',
-    version='0.0.1rc4',
+    version='1.0.0rc1',
     description='MYCElium anaLYsis SOftware - Inspector',
     long_description='see https://github.com/modsim/mycelyso',
     author='Christian C. Sachs',
