@@ -5,6 +5,10 @@ documentation
 
 from setuptools import setup, find_packages
 import os
+import sys
+sys.path.insert(0, '.')
+
+import mycelyso_inspector
 
 
 def get_all_files(path):
@@ -18,12 +22,11 @@ def get_all_files(path):
 
 ADDITIONAL_STATIC_FILES = get_all_files('mycelyso_inspector/static')
 
-if len([filename for filename in ADDITIONAL_STATIC_FILES if '/bower_components/' in filename]) == 0:
+if ((len([filename for filename in ADDITIONAL_STATIC_FILES if '/bower_components/' in filename]) == 0) and
+        not ('SKIP_BOWER_CHECK' in os.environ and os.environ['SKIP_BOWER_CHECK'] == '1')):
     print("This package needs various bower (a JavaScript/web dependency manager) packages to work properly.")
     print("They were not found. Please run `bower install` in mycelyso_inspector/static before packaging.")
-    print()
-    if not ('SKIP_BOWER_CHECK' in os.environ and os.environ['SKIP_BOWER_CHECK'] == '1'):
-        raise SystemExit
+    raise SystemExit
 
 BLACKLIST = [
     'node_modules', '/less/', 'mathbox/vendor', 'mathbox/release', 'cytoscape/benchmark', 'cytoscape/snippets'
@@ -36,10 +39,10 @@ ADDITIONAL_STATIC_FILES = [filepath for filepath in ADDITIONAL_STATIC_FILES if n
 
 setup(
     name='mycelyso-inspector',
-    version='1.0.0rc1',
+    version=mycelyso_inspector.__version__,
     description='MYCElium anaLYsis SOftware - Inspector',
     long_description='see https://github.com/modsim/mycelyso',
-    author='Christian C. Sachs',
+    author=mycelyso_inspector.__author__,
     author_email='c.sachs@fz-juelich.de',
     url='https://github.com/modsim/mycelyso',
     packages=find_packages(),
