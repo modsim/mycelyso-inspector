@@ -754,6 +754,14 @@ def get_static_urls():
     return jsonify(urls=urls)
 
 
+def running_in_docker():
+    try:
+        with open('/proc/1/cgroup') as f:
+            return 'docker' in f.read()
+    except Exception:  # broad, but 'never fail in this method'
+        return False
+
+
 def main():
     print(__banner__)
 
@@ -774,8 +782,10 @@ def main():
 
     argparser.error = _error
 
+    default_bind = '0.0.0.0' if running_in_docker() else '127.0.0.1'
+
     argparser.add_argument('-p', '--port', dest='port', type=int, default=8888)
-    argparser.add_argument('-b', '--bind', dest='host', type=str, default='127.0.0.1')
+    argparser.add_argument('-b', '--bind', dest='host', type=str, default=default_bind)
     argparser.add_argument('-P', '--processes', dest='processes', type=int, default=8)
     argparser.add_argument('-d', '--debug', dest='debug', default=False, action='store_true')
     argparser.add_argument('-nb', '--no-browser', dest='browser', default=True, action='store_false')
