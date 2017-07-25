@@ -224,6 +224,20 @@ def results_per_position():
     return jsonify(results=dataframe_to_json_safe_array_of_dicts(g.RT)[0])
 
 
+@bp.route(POSITION_PREFIX + 'general_info.json')
+def general_info():
+    try:
+        return jsonify(
+            results=dict(
+                banner=np.array(get_image_nodes_by_path('data', 'banner')[0]).tobytes().decode('utf-8'),
+                version=np.array(get_image_nodes_by_path('data', 'version')[0]).tobytes().decode('utf-8'),
+                tunables=np.array(get_image_nodes_by_path('data', 'tunables')[0]).tobytes().decode('utf-8')
+            )
+        )
+    except KeyError:
+        return jsonify(results=dict(banner="", version="", tunables=""))
+
+
 def to_png(data):
     data = data if len(data.shape) == 3 else data.reshape(data.shape + (1,))
     pixel_type = {1: 'L', 2: 'LA', 3: 'RGB', 4: 'RGBA'}[data.shape[2]]

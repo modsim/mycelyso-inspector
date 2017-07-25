@@ -319,6 +319,21 @@ mycelysoApp.controller('mycelysoTrackingGrid', function ($scope, $http, $rootSco
 });
 
 
+mycelysoApp.controller('mycelysoTunables', function ($scope, $http, $rootScope, $q) {
+    $rootScope.$on('newPositionUrl', function (event, url) {
+        $scope.url = url;
+
+        $q.all([
+            $http.get(make_url(url, 'general_info' + '.json')),
+        ]).then(function (responses) {
+            $scope.version = responses[0].data.results.version;
+            $scope.banner = responses[0].data.results.banner;
+            $scope.tunables = responses[0].data.results.tunables;
+        });
+    });
+});
+
+
 mycelysoApp.controller('mycelysoPlotlist', function ($scope, $http, $rootScope, $q) {
 
     $scope.url = '';
