@@ -567,7 +567,7 @@ def prepare_cytoscape_json(graph, calibration=1.0):
                              "weight": calibration * float(attr['weight'])
                          }
                      }
-                     for node_a_id, more in graph.edge.items()
+                     for node_a_id, more in graph.adj.items()
                      for node_b_id, attr in more.items() if node_a_id != node_b_id
                  }.values())
     }
@@ -639,7 +639,7 @@ def get_visualization():
         edge_dict = {
             (min(int(node_a_id), int(node_b_id)), max(int(node_a_id), int(node_b_id))):
                 dict(a=int(node_a_id), b=int(node_b_id), weight=calibration * float(attr['weight']))
-            for node_a_id, more in graph.edge.items()
+            for node_a_id, more in graph.adj.items()
             for node_b_id, attr in more.items() if node_a_id != node_b_id
         }
 
