@@ -19,6 +19,7 @@ import png
 from io import BytesIO
 
 from flask import Flask, Blueprint, redirect, jsonify, abort, g, send_file, Response, url_for, current_app
+from flask.json import JSONEncoder
 from argparse import ArgumentParser
 
 try:
@@ -207,7 +208,10 @@ def dataframe_to_json_safe_array_of_dicts(df):
         if isinstance(value, type("")):
             return value
         if np.isfinite(value):
-            return np.asscalar(value)
+            if isinstance(value, (float, int)):
+                return value
+            else:
+                return np.asscalar(value)
         return None
 
     c = list(df.columns)
@@ -431,7 +435,8 @@ class Plots(object):
         axis.set_ylabel('µm')
 
         x = np.array(g.RTC.timepoint) * seconds_to_hours
-        y = np.array(g.RTC.graph_edge_length) / np.array(g.RTC.graph_endpoint_count)
+        with np.errstate(invalid='ignore'):
+            y = np.array(g.RTC.graph_edge_length) / np.array(g.RTC.graph_endpoint_count)
 
         x = x[np.isfinite(y)]
         y = y[np.isfinite(y)]
@@ -776,6 +781,13 @@ def running_in_docker():
         return False
 
 
+class NumpyAwareJSONEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
+
+
 def main():
     print(__banner__)
 
@@ -785,6 +797,7 @@ def main():
         static_folder = os.path.join(sys._MEIPASS, static_folder)
 
     app = Flask(__name__, static_folder=static_folder)
+    app.json_encoder = NumpyAwareJSONEncoder
     app.register_blueprint(bp)
 
     argparser = ArgumentParser(description="mycelyso Inspector")
@@ -801,6 +814,7 @@ def main():
     argparser.add_argument('-p', '--port', dest='port', type=int, default=8888)
     argparser.add_argument('-b', '--bind', dest='host', type=str, default=default_bind)
     argparser.add_argument('-P', '--processes', dest='processes', type=int, default=8)
+    argparser.add_argument('-t', '--threaded', dest='threaded', default=False, action='store_true')
     argparser.add_argument('-d', '--debug', dest='debug', default=False, action='store_true')
     argparser.add_argument('-nb', '--no-browser', dest='browser', default=True, action='store_false')
 
@@ -808,6 +822,9 @@ def main():
 
     if os.name == 'nt':
         print("Running on Windows, only one process will serve, which may slow down interactive usage!")
+        args.processes = 1
+
+    if args.threaded:
         args.processes = 1
 
     if args.debug:
@@ -831,7 +848,7 @@ def main():
         if args.browser:
             webbrowser.open('http://%s:%d/' % (args.host, args.port))
 
-        app.run(host=args.host, port=args.port)
+        app.run(host=args.host, port=args.port, threaded=args.threaded)
     else:
 
         @app.errorhandler(500)
@@ -842,7 +859,7 @@ def main():
         if args.browser:
             webbrowser.open('http://%s:%d/' % (args.host, args.port))
 
-        app.run(host=args.host, port=args.port, processes=args.processes)
+        app.run(host=args.host, port=args.port, threaded=args.threaded, processes=args.processes)
 
 
 if __name__ == '__main__':
