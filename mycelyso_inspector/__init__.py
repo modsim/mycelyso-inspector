@@ -4,7 +4,7 @@ documentation
 """
 
 __license__ = """
-Copyright (c) 2015-2018 Christian C. Sachs, Forschungszentrum Jülich GmbH.
+Copyright (c) 2015-2019 Christian C. Sachs, Forschungszentrum Jülich GmbH.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -30,17 +30,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 __author__ = "Christian C. Sachs"
 
-__version__ = '1.0.0rc4'
+__version__ = '1.0.0rc5'
 
 __citation__ = """
-Sachs CC, Koepff J, Wiechert W, Grünberger A, Nöh K (2018)
+Sachs CC, Koepff J, Wiechert W, Grünberger A, Nöh K (2019)
 mycelyso – High-throughput analysis of Streptomyces mycelium live cell imaging data
 Submitted.
 """
 
 __banner__ = """
   MYCElium   anaLYsis __ SOftware
-  ___   __ _________ / /_ _____ ___         Developed  2015 - 2018 by
+  ___   __ _________ / /_ _____ ___         Developed  2015 - 2019 by
  /  ' \/ // / __/ -_) / // (_-</ _ \ __
 /_/_/_/\_, /\__/\__/_/\_, /___/\___/'  \.   Christian   C.  Sachs  at
       /___/          /___/              |
