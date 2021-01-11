@@ -1,12 +1,15 @@
 .idea/
 build/
 dist/
+local/
 *.egg-info/
 
 __pycache__/
 *.pyc
 
+*.h5
 *.dll
 *.so
 
 bower_components/
+node_modules/
